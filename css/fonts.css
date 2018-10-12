@@ -1,0 +1,20 @@
+@font-face {
+    font-family: "Avenir Book";
+    src: url("AvenirLTStd-Book.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Axis Roman";
+    src: url("AvenirLTStd-Roman.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Axis Light";
+    src: url("AvenirLTStd-Light.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+}
