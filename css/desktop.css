@@ -60,6 +60,7 @@
 	#viewer {
 		height: 100%;
 		width: 100%;
+		text-align: center;
 	}
 
 	:target {
@@ -139,6 +140,8 @@
 			height: 24px;
 			font-size: 21px;
 			border-left: black solid 5px;
+			overflow: hidden;
+		  	white-space: nowrap;
 		}
 		li input:checked + label
 		{

@@ -121,15 +121,26 @@ function openFile(file, path) {
 function compatible(fileName) {
 	// TODO
 	fileName = fileName.toLowerCase();
-	return (fileName.endsWith('.pdf') || fileName.endsWith('.html') || fileName.endsWith('.css') ||
-		fileName.endsWith('.txt') || fileName.endsWith('.js') || fileName.endsWith('.odt') || 
-		fileName.endsWith('.fodt') || fileName.endsWith('.odp') || fileName.endsWith('.fodp') ||
-		fileName.endsWith('.ods') || fileName.endsWith('.fods') || fileName.endsWith('.odg') || 
-		fileName.endsWith('.fodg'));
+	return isIMG(fileName) || isTXT(fileName) || isODT(fileName) ;
+}
+
+function isIMG(fileName) {
+	var isIMG = /\.(jpe?g|png|gif|bmp)$/i;
+	return fileName.match(isIMG);
+}
+
+function isTXT(fileName) {
+	var isTXT = /\.(pdf|html|css|txt|js)$/i;
+	return fileName.match(isTXT);
+}
+
+function isODT(fileName) {
+	var isODT = /\.(f?odt|f?odp|f?ods|f?odg)$/i;
+	return fileName.match(isODT);
 }
 
 function isFile(fileName) {
 	fileName = fileName.toLowerCase();
-	var isFile = /\.[0-9a-z]{1,5}$/i;
+	var isFile = /\.[a-z]{1,5}$/i;
 	return fileName.match(isFile);
 }
