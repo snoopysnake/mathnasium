@@ -1,0 +1,1 @@
+ var  filelist=' A:/Github/mathnasium/test/test1 A:/Github/mathnasium/test/test2 A:/Github/mathnasium/test/test3 A:/Github/mathnasium/test/test1/test1.txt A:/Github/mathnasium/test/test1/test2.txt A:/Github/mathnasium/test/test3/Resume Critique.doc A:/Github/mathnasium/test/test3/snoopysnake.jpg A:/Github/mathnasium/test/test3/test.txt ';  

@@ -55,8 +55,10 @@ function scan(obj, parent, fullPath)
         for (k in obj){
             if (obj.hasOwnProperty(k)){
             	if (k != null) {
-            		if (compatible(k)) {
-            			addFile(k, parent, fullPath + '/' + k);
+            		if (isFile(k)) {
+            			if (compatible(k)) {
+            				addFile(k, parent, fullPath + '/' + k);
+            			}
             		} else {
             			var newParent = addFolder(k, parent, fullPath + '/' + k);
                 		scan(obj[k], newParent, fullPath + '/' + k);
@@ -119,13 +121,15 @@ function openFile(file, path) {
 function compatible(fileName) {
 	// TODO
 	fileName = fileName.toLowerCase();
-	if (fileName.endsWith('.pdf') || fileName.endsWith('.html') || fileName.endsWith('.css') ||
+	return (fileName.endsWith('.pdf') || fileName.endsWith('.html') || fileName.endsWith('.css') ||
 		fileName.endsWith('.txt') || fileName.endsWith('.js') || fileName.endsWith('.odt') || 
 		fileName.endsWith('.fodt') || fileName.endsWith('.odp') || fileName.endsWith('.fodp') ||
 		fileName.endsWith('.ods') || fileName.endsWith('.fods') || fileName.endsWith('.odg') || 
-		fileName.endsWith('.fodg')) {
-		return true;
-	} else {
-		return false;
-	}
+		fileName.endsWith('.fodg'));
+}
+
+function isFile(fileName) {
+	fileName = fileName.toLowerCase();
+	var isFile = /\.[0-9a-z]{1,5}$/i;
+	return fileName.match(isFile);
 }
