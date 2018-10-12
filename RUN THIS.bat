@@ -1,14 +1,15 @@
-@echo var > js/filelist.js
-@echo filelist='>> js/filelist.js
-dir test /b /s >> js/filelist.js
-@echo '; >> js/filelist.js
+@echo var > js/filelist.txt
+@echo filelist='>> js/filelist.txt
+dir C:\Users\Alex\.m2\repository\com /b /s >> js/filelist.txt
+@echo '; >> js/filelist.txt
 
+break>js/filelist.js
 @echo off
 setlocal EnableDelayedExpansion
-set row=
-for /f "delims=" %%x in (js/filelist.js) do set "row=!row! %%x"
->js/filelist.js echo %row%
-
-echo %row:\=/% >js/filelist.js
+for /f "delims=" %%x in (js/filelist.txt) do (
+	set "x=%%x"
+  	set "x=!x:\=/!"
+	echo|set /p=!x! >> js/filelist.js
+)
 
 start index.html
