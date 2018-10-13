@@ -4,7 +4,7 @@ window.onload = function setup() {
 
 function setTree() {
 	loadFile();	
-	var location = ' A:/Github/mathnasium/';
+	var location = ' A:/Github/mathnasium/test';
 	var fileListArray = filelist.split(' A:/Github/mathnasium/test/');
 	fileListArray.shift(); // removes first empty ele
 	var lastEle = fileListArray[fileListArray.length - 1];
@@ -12,7 +12,7 @@ function setTree() {
 	console.log(fileListArray);
 	var json = arrayToJSON(fileListArray);
 	var tree = document.querySelector('.tree');
-	scan(json, tree, '');
+	scan(json, tree, '', 147, 148, 149);
 	// parseNode(fileListArray, tree, '');
 }
 
@@ -45,7 +45,7 @@ function arrayToJSON(data) {
 	return output;
 }
 
-function scan(obj, parent, fullPath)
+function scan(obj, parent, fullPath, r,g,b)
 {
     var k;
     if (obj instanceof Object) {
@@ -60,8 +60,8 @@ function scan(obj, parent, fullPath)
             				addFile(k, parent, fullPath + '/' + k);
             			}
             		} else {
-            			var newParent = addFolder(k, parent, fullPath + '/' + k);
-                		scan(obj[k], newParent, fullPath + '/' + k);
+            			var newParent = addFolder(k, parent, fullPath + '/' + k, r,g,b);
+                		scan(obj[k], newParent, fullPath + '/' + k, r*1.05,g*1.05,b*1.05);
             		}
             	}
             }
@@ -84,12 +84,13 @@ function addFile(fileName, parent, fullPath){
 	openFile(file, fullPath);
 }
 
-function addFolder(fileName, parent, fullPath) {
+function addFolder(fileName, parent, fullPath, r,g,b) {
 	console.log(fullPath);
 	var cell = document.createElementNS('http://www.w3.org/1999/xhtml','li');
+	cell.style.backgroundColor = 'rgb(' + r + ',' + g + ',' + b + ')';
 	var table = document.createElementNS('http://www.w3.org/1999/xhtml','ol');
 	var label = document.createElementNS('http://www.w3.org/1999/xhtml','label');
-	label.for = fullPath;
+	label.htmlFor = fullPath;
 	label.innerHTML = fileName;
 	var input = document.createElementNS('http://www.w3.org/1999/xhtml','input');
 	input.type = 'checkbox';
@@ -98,6 +99,14 @@ function addFolder(fileName, parent, fullPath) {
 	cell.appendChild(label);
 	cell.appendChild(input);
 	cell.appendChild(table);
+	input.onclick = function() {
+		if (input.checked) {
+			label.style.backgroundColor = '#a33038';
+		}
+		else {
+			label.style.backgroundColor = '#f42941';
+		}
+	}
 	return table;
 }
 
@@ -130,7 +139,7 @@ function isIMG(fileName) {
 }
 
 function isTXT(fileName) {
-	var isTXT = /\.(pdf|html|css|txt|js)$/i;
+	var isTXT = /\.(pdf|html|css|txt|js|pom)$/i;
 	return fileName.match(isTXT);
 }
 
