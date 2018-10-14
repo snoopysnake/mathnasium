@@ -55,13 +55,14 @@ function scan(obj, parent, fullPath, r,g,b)
         for (k in obj){
             if (obj.hasOwnProperty(k)){
             	if (k != null) {
-            		if (isFile(k)) {
-            			if (compatible(k)) {
-            				addFile(k, parent, fullPath + '/' + k);
+            		var fileName = k.trim(); 
+            		if (isFile(fileName)) {
+            			if (compatible(fileName)) {
+            				addFile(fileName, parent, fullPath + '/' + fileName);
             			}
             		} else {
-            			var newParent = addFolder(k, parent, fullPath + '/' + k, r,g,b);
-                		scan(obj[k], newParent, fullPath + '/' + k, r*1.05,g*1.05,b*1.05);
+            			var newParent = addFolder(fileName, parent, fullPath + '/' + fileName, r,g,b);
+                		scan(obj[fileName], newParent, fullPath + '/' + fileName, r*1.05,g*1.05,b*1.05);
             		}
             	}
             }
@@ -151,5 +152,6 @@ function isODT(fileName) {
 function isFile(fileName) {
 	fileName = fileName.toLowerCase();
 	var isFile = /\.[a-z]{1,5}$/i;
+	console.log(fileName);
 	return fileName.match(isFile);
 }
