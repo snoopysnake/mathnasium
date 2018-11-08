@@ -75,10 +75,17 @@ public class Main extends Application {
                     System.out.println("Success!");
                     WebElement dateStart = driver.findElement(By.cssSelector("#gridLP > table > tbody > tr:nth-child(" + itr + ") > td:nth-child(11) > span > span > input"));
                     WebElement dateEnd = driver.findElement(By.cssSelector("#gridLP > table > tbody > tr:nth-child(" + itr + ") > td:nth-child(12) > span > span > input"));
-                    if (dateStart.getAttribute("value").equals(""))
+//                    WebElement isMastered = driver.findElement(By.cssSelector("#gridLP > table > tbody > tr:nth-child(" + itr + ") > td:nth-child(15) > input"));
+                    if (dateStart.getAttribute("value").equals("")) {
                         dateStart.sendKeys(mcList.get(0).dateStart);
-                    if (dateEnd.getAttribute("value").equals(""))
+                        dateStart.submit();
+                    }
+                    if (dateEnd.getAttribute("value").equals("")) {
                         dateEnd.sendKeys(mcList.get(0).dateEnd);
+                        dateEnd.submit();
+                    }
+//                    if (!isMastered.isSelected())
+//                        isMastered.click();
                     found = true;
                     mcList.remove(0);
                     break;
@@ -184,7 +191,7 @@ public class Main extends Application {
 
         Label studentName = new Label("Student name:");
         grid.add(studentName, 0, 3);
-        TextField studentNameTextField = new TextField("taylor mills");
+        TextField studentNameTextField = new TextField();
         grid.add(studentNameTextField, 1, 3);
 
         TextField[] mcNum = new TextField[12];
