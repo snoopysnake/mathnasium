@@ -17,6 +17,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.lang.reflect.Array;
 import java.text.Format;
 import java.text.SimpleDateFormat;
@@ -75,17 +76,17 @@ public class Main extends Application {
                     System.out.println("Success!");
                     WebElement dateStart = driver.findElement(By.cssSelector("#gridLP > table > tbody > tr:nth-child(" + itr + ") > td:nth-child(11) > span > span > input"));
                     WebElement dateEnd = driver.findElement(By.cssSelector("#gridLP > table > tbody > tr:nth-child(" + itr + ") > td:nth-child(12) > span > span > input"));
-//                    WebElement isMastered = driver.findElement(By.cssSelector("#gridLP > table > tbody > tr:nth-child(" + itr + ") > td:nth-child(15) > input"));
+                    WebElement isMastered = driver.findElement(By.cssSelector("#gridLP > table > tbody > tr:nth-child(" + itr + ") > td:nth-child(15) > input"));
                     if (dateStart.getAttribute("value").equals("")) {
                         dateStart.sendKeys(mcList.get(0).dateStart);
-                        dateStart.submit();
+                        dateStart.click();
                     }
                     if (dateEnd.getAttribute("value").equals("")) {
                         dateEnd.sendKeys(mcList.get(0).dateEnd);
-                        dateEnd.submit();
+                        dateEnd.click();
                     }
-//                    if (!isMastered.isSelected())
-//                        isMastered.click();
+                    if (!isMastered.isSelected())
+                        isMastered.click();
                     found = true;
                     mcList.remove(0);
                     break;
@@ -133,22 +134,45 @@ public class Main extends Application {
         calendar.add(Calendar.MONTH, -1);
         String date = formatter.format(calendar.getTime());
         String PATH1 = "C:/Users/Mathnasium/Downloads/";
-        String PATH2 = "C:/Users/Mathnasium/Documents/";
-        String[] split1 = assessmentNum.getAttribute("innerHTML").split("#");
-        String num = split1[1].substring(0,1);
+        String PATH2 = "C:/Users/Mathnasium/Documents/"  + studentName + " Reports/";
         String parseName = studentName.replace(" ","_");
 
-        File lpFile1 = new File(PATH1 + "Learning Plan Report_ "+studentName+"_.pdf");
+        File studentDir = new File(PATH2);
+        studentDir.mkdir();
+
+        File dir1 = new File(PATH1);
+        File[] foundFiles = dir1.listFiles((dir, name) -> name.startsWith("Learning Plan Report_ "+studentName));
+        File lpFile1 = foundFiles[0];
+        System.out.println(lpFile1.getName());
+        for (File f : foundFiles) {
+            if (f.lastModified() > lpFile1.lastModified())
+                lpFile1 = f;
+        }
         File lpFile2 = new File(PATH2 + date + "Learning Plan - " + studentName + ".pdf");
         lpFile1.renameTo(lpFile2);
 
-        File aFile1 = new File(PATH1 + "Assessment Chart_" + parseName +"_" + num + ".pdf");
+        File dir2 = new File(PATH1);
+        foundFiles = dir2.listFiles((dir, name) -> name.startsWith("Assessment Chart_" + parseName));
+        File aFile1 = foundFiles[0];
+        System.out.println(aFile1.getName());
+        for (File f : foundFiles) {
+            if (f.lastModified() > aFile1.lastModified())
+                aFile1 = f;
+        }
         File aFile2 = new File(PATH2 + date + "Assessment Chart - " + studentName + ".pdf");
         aFile1.renameTo(aFile2);
 
         File scan1 = new File(PATH2 + studentName+".pdf");
         File scan2 = new File(PATH2 + date + "Mastery Checks - " + studentName + ".pdf");
         scan1.renameTo(scan2);
+
+        WebElement parent = driver.findElement(By.cssSelector("dl.dl-horizontal > dd > a"));
+        parent.click();
+        Thread.sleep(3000);
+
+        WebElement sendEmail = driver.findElement(By.id("SendEmail"));
+        sendEmail.click();
+        Thread.sleep(300);
 
 //        driver.quit();
 
