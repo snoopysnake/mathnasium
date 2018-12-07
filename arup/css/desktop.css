@@ -1,0 +1,150 @@
+@media screen and (min-width: 600px) {
+
+	@font-face {
+	    font-family: "Avenir Black";
+	    src: url("Avenir-Black.ttf") format("truetype");
+	    font-weight: normal;
+	    font-style: normal;
+	}
+
+	@font-face {
+	    font-family: "Avenir Medium";
+	    src: url("Avenir-Medium.ttf") format("truetype");
+	    font-weight: normal;
+	    font-style: normal;
+	}
+
+	@font-face {
+	    font-family: "Avenir Light";
+	    src: url("AvenirLTStd-Light.otf") format("opentype");
+	    font-weight: normal;
+	    font-style: normal;
+	}
+
+	html, body {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width:  100%;
+		height: 100%;
+		margin: 0px;
+		overflow: hidden;
+	}
+
+	.container {
+		position: absolute;
+		height: 65%;
+		width: 55%;
+		border-top: #f42941 44px solid;
+		border-bottom: #f42941 44px solid;
+		background-color: white;
+		text-align: center;z
+	}
+
+	.header {
+		font-size: 2.2vw;
+		font-family: "Avenir Black";
+		padding-bottom: 10px;
+	}
+
+	#logo {
+		/*position: absolute;*/
+		/*left: 10px;*/
+		height: 70px;
+		padding-top: 12px;
+	}
+
+	.msg {
+		/*text-align: left;*/
+		font-size: 1.2vw;
+		font-family: "Avenir Light";
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 19%;
+	}
+
+	.body {
+		text-align: center;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		font-size: 1.3vw;
+		font-family: "Avenir Light";
+		height: 30%;
+		padding: 12px;
+	}
+
+	.info {
+		display: flex;
+		flex-direction: column;
+	}
+	.info * {
+		padding-bottom: 2.2vw;
+	}
+
+	.site {
+		font-family: "Avenir Medium";
+		text-decoration: none;
+	}
+	.site:link {
+		color: #f42941;
+	}
+	.site:visited {
+		color: #f42941;
+	}
+	.site:hover {
+		color: #a33038;
+	}
+
+	.phone {
+		font-size: 1.05vw;
+		text-decoration: none;
+	}
+	.phone:link {
+		color: black;
+	}
+	.phone:visited {
+		color: black;
+	}
+	.phone:hover {
+		color: black;
+	}
+
+	.directions {
+		font-size: 1.05vw;
+		text-decoration: none;
+	}
+	.directions:link {
+		color: #f42941;
+	}
+	.directions:visited {
+		color: #f42941;
+	}
+	.directions:hover {
+		color: #a33038;
+	}
+
+	.footer {
+		font-size: 1.8vw;
+		font-family: "Avenir Medium";
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 24%;
+	}
+
+	.footer a {
+		text-decoration: none;
+	}
+	.footer a:link {
+		color: #f42941;
+	}
+	.footer a:visited {
+		color: #f42941;
+	}
+	.footer a:hover {
+		color: #a33038;
+	}
+
+}
