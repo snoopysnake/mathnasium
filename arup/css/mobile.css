@@ -88,7 +88,7 @@
 	}
 
 	.site {
-		font-size: 23px;
+		font-size: 20px;
 		font-family: "Avenir Medium";
 		text-decoration: none;
 	}
@@ -131,12 +131,12 @@
 	}
 
 	.footer {
-		font-size: 8vw;
+		font-size: 28px;
 		font-family: "Avenir Medium";
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		height: 10%;
+		height: 8%;
 	}
 
 	.footer a {
