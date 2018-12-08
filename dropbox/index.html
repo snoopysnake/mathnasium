@@ -5,35 +5,19 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" type="text/css" href="css/fonts.css">
-        <link rel="stylesheet" type="text/css" href="css/desktop.css">
-        <link rel="stylesheet" type="text/css" href="css/mobile.css">
+        <link rel="stylesheet" type="text/css" href="css/style.css">
         <script src="js/script.js"></script>
-        <script src="js/filelist.js"></script>
-        <script src="js/filelist.js"></script>
     </head>
     <body>
-        <div id="side">
-            <div id="logo-div">
+        <input id="login" type="submit" value="Login to Dropbox"/>
+        <div class="side">
+            <div class="logo-div">
                 <a href="index.html">
                     <img id="logo" src="logo.png">
                 </a>
             </div>
-            <div id="nav">
-                <ol class="tree">
-                    <li>
-                        <label for="folder1">test</label> <input type="checkbox" id="test" /> 
-                        <ol>
-                            <li id="/test.txt" class="file"><a href="#/test.txt">test.txt</a></li>
-                            <li>
-                                <label for="subfolder1">Subfolder 1</label> <input type="checkbox" id="subfolder1" /> 
-                                <ol>
-                                    <li class="empty">
-                                        <a>empty</a>
-                                    </li>
-                                </ol>
-                            </li>
-                        </ol>
-                    </li>                
+            <div class="nav">
+                <ol class="tree" id="tree">
                 </ol>
             </div>
         </div>

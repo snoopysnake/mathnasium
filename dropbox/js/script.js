@@ -1,101 +1,144 @@
+var access_token = null;
+
 window.onload = function setup() {
-	setTree();
+	var loginBtn = document.getElementById('login');
+	loginBtn.onclick = function() {
+		window.open('https://www.dropbox.com/oauth2/authorize?client_id=g5si6x4lepay5cg&response_type=code&redirect_uri=http://localhost:8000/auth.html', '_blank', 'width=500,height=450');
+	}
 }
 
-function setTree() {
-	loadFile();	
-	var location = ' A:/Github/mathnasium/test';
-	var fileListArray = filelist.split(' A:/Github/mathnasium/test/');
-	fileListArray.shift(); // removes first empty ele
-	var lastEle = fileListArray[fileListArray.length - 1];
-	fileListArray[fileListArray.length - 1] = lastEle.slice(0, -1); // remove space in last ele
-	console.log(fileListArray);
-	var json = arrayToJSON(fileListArray);
+function auth(code) {
+	// console.log(code);
+	if (code != null) {
+	    var xhr = new XMLHttpRequest();
+	    xhr.open('POST', 'https://api.dropboxapi.com/oauth2/token?code='+code+'&grant_type=authorization_code&redirect_uri=http://localhost:8000/auth.html&client_id=g5si6x4lepay5cg&client_secret=<SECRET HERE>');
+	    xhr.onload = function() {
+	        console.log(xhr.response);  
+	        if (xhr.status == 200) {
+                var response = JSON.parse(xhr.response);
+	        	var loginBtn = document.getElementById('login');
+	        	loginBtn.style.display = 'none';
+	        	access_token = response.access_token;
+	        	authSuccess();
+	        }
+	    }
+	    xhr.send();
+	}
+}
+
+function authSuccess() {
+    var json = {
+	    "path": "",
+	    "recursive": true,
+	    "include_media_info": false,
+	    "include_deleted": false,
+	    "include_has_explicit_shared_members": false,
+	    "include_mounted_folders": true
+	}
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://api.dropboxapi.com/2/files/list_folder');
+    xhr.setRequestHeader('Authorization', 'Bearer '+access_token);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+        console.log(xhr.response);
+        if (xhr.status == 200) {
+            var response = JSON.parse(xhr.response);
+            setTree(response.entries);
+            setEmpty();
+        }
+    }
+    xhr.send(JSON.stringify(json));
+}
+
+// OLD CODE BELOW
+
+function setTree(entries) {
 	var tree = document.querySelector('.tree');
-	scan(json, tree, '', 147, 148, 149);
+	scan(entries, tree, 147, 148, 149);
 	// parseNode(fileListArray, tree, '');
 }
 
-function loadFile() {
-	var url = window.location.href;
-	var split = url.split('#');
-	if (split.length == 2) {
-		// TODO
-		var viewer = document.getElementById('viewer');
-		viewer.src = 'A:/Github/mathnasium/test' + split[1];
-		// var file = document.getElementById(split[1]);
-		// file.click();
-	}
-}
+// function loadFile() {
+// 	var url = window.location.href;
+// 	var split = url.split('#');
+// 	if (split.length == 2) {
+// 		// TODO
+// 		var viewer = document.getElementById('viewer');
+// 		viewer.src = 'A:/Github/mathnasium/test' + split[1];
+// 		// var file = document.getElementById(split[1]);
+// 		// file.click();
+// 	}
+// }
 
-function arrayToJSON(data) {
-	var output = {};
-	var current;
-
-	for(var a=0; a<data.length; a++) {
-	  var s = data[a].split('/');
-	  current = output;
-	  for(var i=0; i<s.length; i++) {
-	    if(s[i] != '') {
-	      if(current[s[i]] == null) current[s[i]] = {};
-	      current = current[s[i]];
-	    }
-	  }
-	}
-	return output;
-}
-
-function scan(obj, parent, fullPath, r,g,b)
+function scan(entries, parent, r,g,b)
 {
-    var k;
-    if (obj instanceof Object) {
-    	if (Object.keys(obj).length == 0) {
-    		addEmpty(parent);
-    	}
-        for (k in obj){
-            if (obj.hasOwnProperty(k)){
-            	if (k != null) {
-            		var fileName = k.trim(); 
-            		if (isFile(fileName)) {
-            			if (compatible(fileName)) {
-            				addFile(fileName, parent, fullPath + '/' + fileName);
-            			}
-            		} else {
-            			var newParent = addFolder(fileName, parent, fullPath + '/' + fileName, r,g,b);
-                		scan(obj[fileName], newParent, fullPath + '/' + fileName, r*1.05,g*1.05,b*1.05);
-            		}
-            	}
-            }
-        }
-    }
+	for (var i = 0; i < entries.length; i++) {
+		console.log(entries[i]);
+		var name = entries[i]['name'];
+		var path = entries[i]['path_display'];
+		var parent = path.replace('/' + name,'');
+		if (parent === '')
+			parent = 'tree';
+		var x = parent.split('/').length - 1;
+		console.log(x);
+		var parentEle = document.getElementById(parent);
+		if (entries[i]['.tag'] == 'folder') {
+			addFolder(name, parentEle, path, r + r*x*(.05), g + g*x*(.05), b + b*x*(.05));
+		}
+		else if (entries[i]['.tag'] == 'file') {
+			var newParent = addFile(name, parentEle, path);
+		}
 
+	}
 };
 
-function addFile(fileName, parent, fullPath){
+function addFile(fileName, parent, path){
 	// add file ele
-	console.log(fullPath);
+	console.log(path);
 	var cell = document.createElementNS('http://www.w3.org/1999/xhtml','li');
 	cell.classList.add('file');
-	cell.id = fullPath; // important for target
+	cell.id = path; // important for target
 	var file = document.createElementNS('http://www.w3.org/1999/xhtml','a');
-	file.href = '#' + fullPath; // important for target
 	file.innerHTML = fileName;
+	file.href = '#' + path; // makes it clickable
 	parent.appendChild(cell);
 	cell.appendChild(file);
-	openFile(file, fullPath);
+	addFileLink(file, path);
 }
 
-function addFolder(fileName, parent, fullPath, r,g,b) {
-	console.log(fullPath);
+function addFileLink(file, path) {
+	var viewer = document.getElementById('viewer');
+	file.onclick = function() {
+	    var json = {"path": path, "short_url": false};
+	    var xhr = new XMLHttpRequest();
+	    // xhr.open('POST', 'https://api.dropboxapi.com/2/files/get_temporary_link');
+	    xhr.open('POST', 'https://api.dropboxapi.com/2/sharing/create_shared_link');
+	    xhr.setRequestHeader('Authorization', 'Bearer '+access_token);
+	    xhr.setRequestHeader('Content-Type', 'application/json');
+	    xhr.onload = function() {
+	        console.log(xhr.response);
+	        if (xhr.status == 200) {
+	            var response = JSON.parse(xhr.response);
+	            var url = response.url.replace('?dl=0','');
+				viewer.src = 'https://docs.google.com/gview?url=' + url + '?dl=1&embedded=true';
+	        }
+	    }
+	    xhr.send(JSON.stringify(json));
+	}
+}
+
+function addFolder(fileName, parent, path, r,g,b) {
+	console.log(path);
 	var cell = document.createElementNS('http://www.w3.org/1999/xhtml','li');
 	cell.style.backgroundColor = 'rgb(' + r + ',' + g + ',' + b + ')';
 	var table = document.createElementNS('http://www.w3.org/1999/xhtml','ol');
+	table.id = path;
 	var label = document.createElementNS('http://www.w3.org/1999/xhtml','label');
-	label.htmlFor = fullPath;
+	label.htmlFor = path + ' btn';
 	label.innerHTML = fileName;
 	var input = document.createElementNS('http://www.w3.org/1999/xhtml','input');
 	input.type = 'checkbox';
-	input.id = fullPath;
+	input.id = path + 'btn';
 	parent.appendChild(cell);
 	cell.appendChild(label);
 	cell.appendChild(input);
@@ -111,6 +154,14 @@ function addFolder(fileName, parent, fullPath, r,g,b) {
 	return table;
 }
 
+function setEmpty() {
+	var tables = document.querySelectorAll('ol');
+	for (var i = 0; i < tables.length; i++) {
+		if (tables[i].childNodes.length == 0)
+			addEmpty(tables[i]);
+	}
+}
+
 function addEmpty(parent) {
 	var cell = document.createElementNS('http://www.w3.org/1999/xhtml','li');
 	cell.classList.add('empty');
@@ -118,14 +169,6 @@ function addEmpty(parent) {
 	msg.innerHTML = 'empty';
 	parent.appendChild(cell);
 	cell.appendChild(msg);
-}
-
-function openFile(file, path) {
-	// TODO
-	var viewer = document.getElementById('viewer');
-	file.onclick = function() {
-		viewer.src = 'A:/Github/mathnasium/test' + path;
-	}
 }
 
 function compatible(fileName) {
