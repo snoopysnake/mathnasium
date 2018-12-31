@@ -15,8 +15,9 @@ import javafx.stage.Stage;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.File;
 import java.text.Format;
@@ -27,8 +28,11 @@ import java.util.HashMap;
 import java.util.List;
 
 public class Progress extends Application {
-    String PATH1 = "C:/Users/Mathnasium/Downloads/";
-    String PATH2 = "C:/Users/Mathnasium/Documents/";
+    String currentDir = System.getProperty("user.dir");
+    String PATH1 = "C:\\Users\\Mathnasium\\Downloads\\";
+    String PATH2 = "C:\\Users\\Mathnasium\\Documents\\";
+//    String PATH2 = currentDir + "\\reports";
+    boolean isLoggedIn = false;
 
     class MasteryCheck {
         String num;
@@ -43,38 +47,36 @@ public class Progress extends Application {
     }
 
     public void automation(WebDriver driver1, String user1, String user2, String studentName, HashMap<String,String> loginInfo, ArrayList<MasteryCheck> mcList) throws InterruptedException {
-        // Optional, if not specified, WebDriver will search your path for chromedriver.
-        System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
+        WebDriverWait wait1 = new WebDriverWait(driver1,6000);
 
-        WebElement radiusUser = driver1.findElement(By.id("UserName"));
-        radiusUser.sendKeys(user1);
-        WebElement radiusPass = driver1.findElement(By.id("Password"));
-        radiusPass.sendKeys(loginInfo.get(user1));
-        radiusPass.submit();
-        Thread.sleep(1000);  // Let the user actually see something!
+        if (!isLoggedIn) {
+            WebElement radiusUser = driver1.findElement(By.id("UserName"));
+            radiusUser.sendKeys(user1);
+            WebElement radiusPass = driver1.findElement(By.id("Password"));
+            radiusPass.sendKeys(loginInfo.get(user1));
+            radiusPass.submit();
+            isLoggedIn = true;
+        }
 
-        WebElement searchIcon = driver1.findElement(By.id("SearchIcon"));
+        WebElement searchIcon = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.id("SearchIcon")));
         searchIcon.click();
-        Thread.sleep(1000);
-        WebElement searchBar = driver1.findElement(By.id("ContactSearch"));
+        WebElement searchBar = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.id("ContactSearch")));
         searchBar.sendKeys(studentName);
         WebElement searchBtn = driver1.findElement(By.id("globalbtnsearch"));
         searchBtn.click();
-        Thread.sleep(500);
-        WebElement studentHref = driver1.findElement(By.cssSelector("table.k-selectable > tbody > tr:first-child > td:nth-child(3) > a"));
+        WebElement studentHref = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("table.k-selectable > tbody > tr:first-child > td:nth-child(3) > a")));
         studentHref.click();
-        Thread.sleep(2000);
 
-        WebElement editLP = driver1.findElement(By.cssSelector("#gridLearningPlan > table > tbody > tr:first-child > td:nth-child(6) > a"));
+        WebElement editLP = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#gridLearningPlan > table > tbody > tr:first-child > td:nth-child(6) > a")));
         editLP.click();
-        Thread.sleep(4000);
 
         while(!mcList.isEmpty()) {
+            WebElement LP = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.id("gridLP")));
             List<WebElement> rows = driver1.findElements(By.cssSelector("#gridLP > table > tbody > tr"));
             int itr = 1;
             boolean found = false;
             for (WebElement row : rows) {
-                WebElement descr = driver1.findElement(By.cssSelector("#gridLP > table > tbody > tr:nth-child(" + itr + ") > td:nth-child(9)"));
+                WebElement descr = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#gridLP > table > tbody > tr:nth-child(" + itr + ") > td:nth-child(9)")));
                 System.out.println(descr.getAttribute("innerHTML"));
                 if (descr.getAttribute("innerHTML").contains(mcList.get(0).num)) {
                     System.out.println("Success!");
@@ -98,15 +100,14 @@ public class Progress extends Application {
                 itr++;
             }
             if (!found) {
-                WebElement add = driver1.findElement(By.id("additem"));
+                WebElement add = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.id("additem")));
                 add.click();
-                Thread.sleep(2000);
 
-                WebElement pkSearch = driver1.findElement(By.id("PKSearch"));
+                WebElement pkSearch = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.id("PKSearch")));
                 pkSearch.clear();
                 pkSearch.sendKeys(mcList.get(0).num);
-                Thread.sleep(5000);
-                WebElement select = driver1.findElement(By.cssSelector("#gridPK > table > tbody > tr:first-child > td:first-child > input"));
+                Thread.sleep(2500);
+                WebElement select = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#gridPK > table > tbody > tr:first-child > td:first-child > input")));
                 select.click();
 
                 WebElement savePK = driver1.findElement(By.id("btnsave"));
@@ -118,10 +119,9 @@ public class Progress extends Application {
 
         WebElement goBack = driver1.findElement(By.id("studenturl"));
         goBack.click();
-        Thread.sleep(2000);
 
         // PRINT LP REPORT
-        WebElement LPReport = driver1.findElement(By.cssSelector("#gridLearningPlan > table > tbody > tr:first-child > td:nth-child(5) > a"));
+        WebElement LPReport = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#gridLearningPlan > table > tbody > tr:first-child > td:nth-child(5) > a")));
         LPReport.click();
         Thread.sleep(500);
         WebElement saveReport = driver1.findElement(By.id("ViewPrintChartBtn"));
@@ -129,11 +129,11 @@ public class Progress extends Application {
         Thread.sleep(5000);
 
         // PRINT ASSESSMENT
-        WebElement assessment = driver1.findElement(By.cssSelector("#gridAssessment > table > tbody > tr:first-child > td:nth-child(6) > a"));
+        WebElement assessment = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#gridAssessment > table > tbody > tr:first-child > td:nth-child(6) > a")));
         assessment.click();
         Thread.sleep(500);
         saveReport.click();
-        Thread.sleep(10000);
+        Thread.sleep(5000);
 
         // RENAME FILES
         Format formatter = new SimpleDateFormat("MMMM YYYY ");
@@ -142,7 +142,7 @@ public class Progress extends Application {
         String date = formatter.format(calendar.getTime());
         String parseName = studentName.replace(" ","_");
 
-        File studentDir = new File(PATH2 + studentName + " Reports/");
+        File studentDir = new File(PATH2 + studentName + " Reports\\");
         studentDir.mkdir();
 
         File dir1 = new File(PATH1);
@@ -153,7 +153,7 @@ public class Progress extends Application {
             if (f.lastModified() > lpFile1.lastModified())
                 lpFile1 = f;
         }
-        File lpFile2 = new File(PATH2 + studentName + " Reports/" + date + "Learning Plan - " + studentName + ".pdf");
+        File lpFile2 = new File(PATH2 + studentName + " Reports\\" + date + "Learning Plan - " + studentName + ".pdf");
         lpFile1.renameTo(lpFile2);
 
         File dir2 = new File(PATH1);
@@ -164,24 +164,23 @@ public class Progress extends Application {
             if (f.lastModified() > aFile1.lastModified())
                 aFile1 = f;
         }
-        File aFile2 = new File(PATH2 + studentName + " Reports/" + date + "Assessment Chart - " + studentName + ".pdf");
+        File aFile2 = new File(PATH2 + studentName + " Reports\\" + date + "Assessment Chart - " + studentName + ".pdf");
         aFile1.renameTo(aFile2);
 
         File scan1 = new File(PATH1  + studentName + ".pdf");
-        File scan2 = new File(PATH2 + studentName + " Reports/" + date + "Mastery Checks - " + studentName + ".pdf");
+        File scan2 = new File(PATH2 + studentName + " Reports\\" + date + "Mastery Checks - " + studentName + ".pdf");
         scan1.renameTo(scan2);
 
         // Go to parent's email
         WebElement parent = driver1.findElement(By.cssSelector("dl.dl-horizontal > dd > a"));
         parent.click();
-        Thread.sleep(3000);
 
         WebElement sendEmail = driver1.findElement(By.id("SendEmail"));
         sendEmail.click();
-        Thread.sleep(300);
+        Thread.sleep(500);
         WebElement template = driver1.findElement(By.id("TemplateName"));
         Select dropdown= new Select(template);
-        dropdown.selectByIndex(3);
+        dropdown.selectByVisibleText("Progress Report Satisfactory");
 
 //        driver1.quit();
 
@@ -214,7 +213,7 @@ public class Progress extends Application {
     }
     public void start(Stage primaryStage) throws Exception{
 
-        primaryStage.setTitle("Hello World");
+        primaryStage.setTitle("Progress Report Automation");
         GridPane grid = new GridPane();
         ScrollPane sp = new ScrollPane(grid);
         sp.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -235,7 +234,7 @@ public class Progress extends Application {
 
         Label radiusPW = new Label("Radius password:");
         grid.add(radiusPW, 0, 2);
-        TextField radiusPWTextField = new TextField("");
+        PasswordField radiusPWTextField = new PasswordField();
         grid.add(radiusPWTextField, 1, 2);
 
         Label MBUser = new Label("MindBody username:");
@@ -245,7 +244,7 @@ public class Progress extends Application {
 
         Label MBPW = new Label("MindBody password:");
         grid.add(MBPW, 2, 2);
-        TextField MBPWTextField = new TextField();
+        PasswordField MBPWTextField = new PasswordField();
         grid.add(MBPWTextField, 3, 2);
 
         Button PATH1Btn = new Button("Change Downloads Folder");
@@ -301,10 +300,8 @@ public class Progress extends Application {
         grid.add(cb2, 1, 18);
 
         EventHandler<ActionEvent> event = e -> {
-            File currentDir = new File(System.getProperty("user.dir"));
-            System.setProperty("webdriver.chrome.driver", currentDir + "\\src\\chromedriver.exe");
-            WebDriver driver1 = new ChromeDriver(); //TODO: make this a singleton
-            driver1.get("https://radius.mathnasium.com/Account/Login");
+            WebDriver driver1 = ChromeDriverSingleton.getInstance();
+            driver1.get("https://radius.mathnasium.com");
 
             try {
 //                primaryStage.close();
@@ -322,12 +319,13 @@ public class Progress extends Application {
                 automation(driver1, radiusUserTextField.getText(), MBUserTextField.getText(), studentNameTextField.getText(), loginInfo, mcList);
             } catch (Exception el) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setHeaderText("An exception occurred!");
+                alert.setHeaderText("Something went wrong!");
+                alert.setContentText("Please restart automation.\n");
                 alert.getDialogPane().setExpandableContent(new ScrollPane(new TextArea(el.toString())));
                 alert.showAndWait();
 
                 el.printStackTrace();
-                driver1.get("https://radius.mathnasium.com/Account/Login");
+                driver1.get("https://radius.mathnasium.com");
             }
         };
 
