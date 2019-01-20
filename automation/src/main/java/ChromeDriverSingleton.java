@@ -9,7 +9,7 @@ public class ChromeDriverSingleton {
 
     public static ChromeDriver getInstance() {
         if (driver == null) {
-            System.setProperty("webdriver.chrome.driver", System.getProperty("user.dir") + "\\src\\chromedriver.exe");
+            System.setProperty("webdriver.chrome.driver", System.getProperty("user.dir") + "\\chromedriver.exe");
             driver = new ChromeDriver();
         }
         return driver;

@@ -1,4 +1,5 @@
 import javafx.application.Application;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -13,13 +14,16 @@ import javafx.scene.text.Text;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -46,7 +50,8 @@ public class Progress extends Application {
         }
     }
 
-    public void automation(WebDriver driver1, String user1, String user2, String studentName, HashMap<String,String> loginInfo, ArrayList<MasteryCheck> mcList) throws InterruptedException {
+    public void automation1(WebDriver driver1, String user1, String studentName, HashMap<String,String> loginInfo,
+                            ArrayList<MasteryCheck> mcList, String location) throws InterruptedException {
         WebDriverWait wait1 = new WebDriverWait(driver1,6000);
 
         if (!isLoggedIn) {
@@ -106,7 +111,6 @@ public class Progress extends Application {
                 WebElement pkSearch = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.id("PKSearch")));
                 pkSearch.clear();
                 pkSearch.sendKeys(mcList.get(0).num);
-                Thread.sleep(2500);
                 WebElement select = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#gridPK > table > tbody > tr:first-child > td:first-child > input")));
                 select.click();
 
@@ -175,43 +179,74 @@ public class Progress extends Application {
         WebElement parent = driver1.findElement(By.cssSelector("dl.dl-horizontal > dd > a"));
         parent.click();
 
-        WebElement sendEmail = driver1.findElement(By.id("SendEmail"));
+        WebElement sendEmail = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.id("SendEmail")));
         sendEmail.click();
-        Thread.sleep(500);
-        WebElement template = driver1.findElement(By.id("TemplateName"));
+        WebElement template = wait1.until(ExpectedConditions.visibilityOfElementLocated(By.id("TemplateName")));
         Select dropdown= new Select(template);
         dropdown.selectByVisibleText("Progress Report Satisfactory");
+//        WebElement cc = driver1.findElement(By.id("CC"));
+        WebElement bcc = driver1.findElement(By.id("BCC"));
+        String locEmail = "";
+        switch(location) {
+            case "Ellicott City": locEmail = "ellicottcity@mathnasium.com"; break;
+            case "Germantown": locEmail = "germantownmd@mathnasium.com"; break;
+            case "North Potomac": locEmail = "northpotomac@mathnasium.com"; break;
+            case "Potomac": locEmail = "potomac@mathnasium.com"; break;
+            case "Rockville": locEmail = "rockville@mathnasium.com"; break;
+        }
+        bcc.sendKeys(locEmail);
 
-//        driver1.quit();
-
-        // MindBody automation
-//        WebDriver driver2 = new ChromeDriver();
-//        driver2.get("https://clients.mindbodyonline.com/ASP/su1.asp?studioid=767884");
-//        WebElement login = driver2.findElement(By.id("requiredtxtUserName"));
-//        login.sendKeys(user2);
-//        WebElement password = driver2.findElement(By.id("requiredtxtPassword"));
-//        password.sendKeys(loginInfo.get(user2));
-//        password.submit();
-//        Thread.sleep(5000);
-//
-//        WebElement tabs = driver2.findElement(By.cssSelector("#tabs > ul > li:nth-child(6) > a"));
-//        tabs.click();
-//        Thread.sleep(3000);
-//
-//        WebElement clientSearch = driver2.findElement(By.id("txtClientSearch"));
-//        clientSearch.sendKeys(studentName);
-//        WebElement searchBtn = driver2.findElement(By.id("btnSearch"));
-//        searchBtn.click();
-//        Thread.sleep(3000);
-//
-//        WebElement accountDetails = driver2.findElement(By.id("btnClientProfile"));
-//        accountDetails.click();
-//        Thread.sleep(2000);
-//
-//        WebElement clientIndexes = driver2.findElement(By.cssSelector("#clientindexes > legend > a > span"));
-//        clientIndexes.click();
+        List<WebElement> guardianAndStudent = driver1.findElements(By.cssSelector(".col-md-8 > .k-widget > .k-multiselect-wrap"));
+        for (WebElement ele: guardianAndStudent) {
+            Thread.sleep(2500);
+            ele.click();
+            if (ele.getText().equals("Select...")) {
+                List<WebElement> guardians = driver1.findElements(By.cssSelector("#multiSelectGuardians_listbox > li:not(:first-child)"));
+                for (WebElement g : guardians) {
+                    g.click();
+                }
+            }
+            else {
+                List<WebElement> students = driver1.findElements(By.cssSelector("#multiSelectStudents_listbox > li"));
+                // .k-animation-container > .k-list-container > .k-list-scroller > .k-list > li
+                for (WebElement s: students) {
+                    if (studentName.contains(ele.getText())) {
+                        s.click();
+                        break;
+                    }
+                }
+            }
+        }
     }
+
+    public void automation2(WebDriver driver2, String user2, String studentName, HashMap<String, String> loginInfo) throws InterruptedException {
+        // MindBody automation
+        WebDriverWait wait2 = new WebDriverWait(driver2,6000);
+
+        WebElement login = driver2.findElement(By.id("requiredtxtUserName"));
+        login.sendKeys(user2);
+        WebElement password = wait2.until(ExpectedConditions.visibilityOfElementLocated(By.id("requiredtxtPassword")));
+        password.sendKeys(loginInfo.get(user2));
+        password.sendKeys(Keys.ENTER);
+
+        WebElement tabs = wait2.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#tabs > ul > li:nth-child(6) > a")));
+        tabs.click();
+
+        WebElement clientSearch = wait2.until(ExpectedConditions.visibilityOfElementLocated(By.id("txtClientSearch")));
+        clientSearch.sendKeys(studentName);
+        WebElement searchBtn = driver2.findElement(By.id("btnSearch"));
+        searchBtn.click();
+
+        WebElement accountDetails = wait2.until(ExpectedConditions.visibilityOfElementLocated(By.id("btnClientProfile")));
+        accountDetails.click();
+
+        WebElement clientIndexes = wait2.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#clientindexes > legend > a > span")));
+//        clientIndexes.click();
+
+    }
+
     public void start(Stage primaryStage) throws Exception{
+        System.setProperty("webdriver.chrome.driver", System.getProperty("user.dir") + "\\src\\chromedriver.exe");
 
         primaryStage.setTitle("Progress Report Automation");
         GridPane grid = new GridPane();
@@ -274,6 +309,19 @@ public class Progress extends Application {
         studentNameTextField.setText("Test Student");
         grid.add(studentNameTextField, 1, 3);
 
+        Label location = new Label("Location: ");
+        grid.add(location, 2, 3);
+        final ComboBox locationBox = new ComboBox();
+        locationBox.getItems().addAll(
+                "Ellicott City",
+                "Germantown",
+                "North Potomac",
+                "Potomac",
+                "Rockville"
+        );
+        locationBox.setValue("Select your center");
+        grid.add(locationBox, 3, 3);
+
         TextField[] mcNum = new TextField[12];
         DatePicker[] mcStart = new DatePicker[12];
         DatePicker[] mcEnd = new DatePicker[12];
@@ -300,32 +348,67 @@ public class Progress extends Application {
         grid.add(cb2, 1, 18);
 
         EventHandler<ActionEvent> event = e -> {
-            WebDriver driver1 = ChromeDriverSingleton.getInstance();
-            driver1.get("https://radius.mathnasium.com");
+            System.out.println(locationBox.getValue().toString());
+            if (!locationBox.getValue().equals("Select your center")) {
+                WebDriver driver1 = new ChromeDriver();
+                driver1.get("https://radius.mathnasium.com");
+                WebDriver driver2 = new ChromeDriver();
+                driver2.get("https://clients.mindbodyonline.com/ASP/su1.asp?studioid=767884");
 
-            try {
-//                primaryStage.close();
-                HashMap<String,String> loginInfo = new HashMap<>();
+                HashMap<String, String> loginInfo = new HashMap<>();
                 loginInfo.put(radiusUserTextField.getText(), radiusPWTextField.getText());
                 loginInfo.put(MBUserTextField.getText(), MBPWTextField.getText());
 
-                ArrayList<MasteryCheck> mcList = new ArrayList<>();
-                for (int i = 0; i < 12; i++) {
-                    if (!mcNum[i].getText().equals("")) {
-                        MasteryCheck mc = new MasteryCheck(mcNum[i].getText(), mcStart[i].getEditor().getText(), mcEnd[i].getEditor().getText());
-                        mcList.add(mc);
+                Task task1 = new Task<Void>() {
+                    @Override
+                    protected Void call() throws Exception {
+                        ArrayList<MasteryCheck> mcList = new ArrayList<>();
+                        for (int i = 0; i < 12; i++) {
+                            if (!mcNum[i].getText().equals("")) {
+                                MasteryCheck mc = new MasteryCheck(mcNum[i].getText(), mcStart[i].getEditor().getText(), mcEnd[i].getEditor().getText());
+                                mcList.add(mc);
+                            }
+                        }
+                        automation1(driver1, radiusUserTextField.getText(), studentNameTextField.getText(), loginInfo, mcList, locationBox.getValue().toString());
+                        return null;
                     }
-                }
-                automation(driver1, radiusUserTextField.getText(), MBUserTextField.getText(), studentNameTextField.getText(), loginInfo, mcList);
-            } catch (Exception el) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setHeaderText("Something went wrong!");
-                alert.setContentText("Please restart automation.\n");
-                alert.getDialogPane().setExpandableContent(new ScrollPane(new TextArea(el.toString())));
-                alert.showAndWait();
+                };
+                task1.setOnFailed(event1 -> {
+                    Exception e1 = (Exception) task1.getException();
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setHeaderText("Something went wrong!");
+                    alert.setContentText("Please restart automation.\n");
+                    alert.getDialogPane().setExpandableContent(new ScrollPane(new TextArea(e1.toString())));
+                    alert.showAndWait();
 
-                el.printStackTrace();
-                driver1.get("https://radius.mathnasium.com");
+                    e1.printStackTrace();
+                });
+
+                Task task2 = new Task<Void>() {
+                    @Override
+                    protected Void call() throws Exception {
+                        automation2(driver2, MBUserTextField.getText(), studentNameTextField.getText(), loginInfo);
+                        return null;
+                    }
+                };
+                task2.setOnFailed(event1 -> {
+                    Exception e2 = (Exception) task2.getException();
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setHeaderText("Something went wrong!");
+                    alert.setContentText("Please restart automation.\n");
+                    alert.getDialogPane().setExpandableContent(new ScrollPane(new TextArea(e2.toString())));
+                    alert.showAndWait();
+
+                    e2.printStackTrace();
+                });
+
+                new Thread(task1).start();
+                new Thread(task2).start();
+            } else {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setHeaderText("Select a location!");
+                alert.setContentText("Please select a location from the dropdown menu.");
+                alert.show();
             }
         };
 
