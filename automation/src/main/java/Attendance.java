@@ -53,7 +53,7 @@ public class Attendance extends Application {
     CellStyle successCell;
     CellStyle failCell;
 
-    class Student {
+    private class Student {
         String name;
         String startTime;
         String endTime;
@@ -103,7 +103,7 @@ public class Attendance extends Application {
         }
     }
 
-    public void automation(ChromeDriver driver, File arrival, String user, String pass, LocalDate startDate, LocalDate endDate) throws IOException, ParseException, InterruptedException {
+    public void automation(ChromeDriver driver, File arrival, boolean includeErrors, String user, String pass, LocalDate startDate, LocalDate endDate) throws IOException, ParseException, InterruptedException {
         DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("M/d/yyyy");
 
         HashMap<String, Student> students = new HashMap<>();
@@ -134,11 +134,21 @@ public class Attendance extends Application {
 //            System.out.print(", Name: " + name); // Excel log info
 //            System.out.println(", Check in Time: " + checkIn); // Excel log info
 
-            if ((row.getCell(9) != null && !row.getCell(9).toString().equals("\u2714") &&
-                    !row.getCell(9).toString().equals("\u2718")) || row.getCell(9) == null) {
-                if (!students.containsKey(id))
-                    students.put(id, new Student(name, checkIn, checkIn, timeFrame));
-                else students.get(id).addTime(checkIn);
+            if (includeErrors) {
+                if ((row.getCell(9) != null && !row.getCell(9).toString().equals("\u2714") &&
+                        row.getCell(9).toString().equals("\u2718")) || row.getCell(9) == null) {
+                    if (!students.containsKey(id))
+                        students.put(id, new Student(name, checkIn, checkIn, timeFrame));
+                    else students.get(id).addTime(checkIn);
+                }
+            }
+            else {
+                if ((row.getCell(9) != null && !row.getCell(9).toString().equals("\u2714") &&
+                        !row.getCell(9).toString().equals("\u2718")) || row.getCell(9) == null) {
+                    if (!students.containsKey(id))
+                        students.put(id, new Student(name, checkIn, checkIn, timeFrame));
+                    else students.get(id).addTime(checkIn);
+                }
             }
         }
 
@@ -169,9 +179,9 @@ public class Attendance extends Application {
             isLoggedIn = true;
             searchIcon.click();
             WebElement searchBar = wait.until(ExpectedConditions.elementToBeClickable(By.id("ContactSearch")));
-            Thread.sleep(250);
+            Thread.sleep(500); // In case name is input incorrectly
             searchBar.sendKeys(student.name);
-            System.out.println(searchBar.getText());
+            searchBar.sendKeys(Keys.ENTER);
 
             WebElement searchBtn = driver.findElement(By.id("globalbtnsearch"));
             searchBtn.click();
@@ -254,6 +264,27 @@ public class Attendance extends Application {
                 System.out.println("Attendance error message does not exist!");
             }
 
+            // Makes sure fancybox is closed
+            List<WebElement> fancyBox = driver.findElements(By.className("fancybox-overlay"));
+            if (fancyBox.size() > 0)
+                wait.until(ExpectedConditions.invisibilityOf(fancyBox.get(0)));
+            loadingMask = driver.findElements(By.cssSelector(".k-loading-mask"));
+            for (WebElement e : loadingMask) {
+                wait.until(ExpectedConditions.invisibilityOf(e));
+            }
+            // Checks table for date input
+            try {
+                WebElement dateInput = wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("#attendanceGrid > table > tbody > tr:first-child > td:nth-child(3)")));
+                if (!dateInput.getText().equals(startDate.format(formatter2))) {
+                    System.out.println("Attendance was not added!");
+                    attendanceAdded = false;
+                }
+            }
+            catch(Exception e) {
+                System.out.println("Attendance was not added!");
+                attendanceAdded = false;
+            }
+
             rowIt = sheet.iterator();
             rowIt.next();
             fos = new FileOutputStream(arrival);
@@ -274,7 +305,7 @@ public class Attendance extends Application {
             }
             workbook.write(fos);
 
-            Thread.sleep(1000);
+//            Thread.sleep(1000);
         }
     }
 
@@ -323,11 +354,15 @@ public class Attendance extends Application {
         dirBtn.setOnAction(event -> {
             DirectoryChooser directoryChooser = new DirectoryChooser();
             directoryChooser.setTitle("Select Reports Folder");
-            if (directoryChooser.showDialog(primaryStage) != null)
-                PATH = directoryChooser.showDialog(primaryStage).getPath();
+            File selectedDirectory = directoryChooser.showDialog(primaryStage);
+            if (selectedDirectory != null)
+                PATH = selectedDirectory.getPath();
             System.out.println("Path changed to: " + PATH);
         });
         grid.add(dirBtn, 1, 5);
+
+        CheckBox cb = new CheckBox("Include errors");
+        grid.add(cb, 1, 6);
 
         Button btn = new Button("Start");
         btn.setOnAction(event -> {
@@ -344,7 +379,7 @@ public class Attendance extends Application {
                 Task task = new Task<Void>() {
                     @Override
                     protected Void call() throws Exception {
-                        automation(driver, arrival, radiusUserTextField.getText(), radiusPWTextField.getText(), attendanceDate1.getValue(), attendanceDate1.getValue());
+                        automation(driver, arrival, cb.isSelected(), radiusUserTextField.getText(), radiusPWTextField.getText(), attendanceDate1.getValue(), attendanceDate1.getValue());
                         return null;
                     }
                 };
@@ -460,7 +495,7 @@ public class Attendance extends Application {
 
         Scene splashScene = new Scene(splashLayout, Color.TRANSPARENT);
         initStage.setScene(splashScene);
-        initStage.setHeight(175);
+        initStage.setHeight(200);
         initStage.setWidth(500);
         initStage.initStyle(StageStyle.TRANSPARENT);
         initStage.setAlwaysOnTop(true);
@@ -473,7 +508,7 @@ public class Attendance extends Application {
 
     @Override
     public void start(final Stage initStage) throws Exception {
-        final Task<Void> friendTask = new Task<Void>() {
+        final Task<Void> task = new Task<Void>() {
             @Override
             protected Void call() throws InterruptedException {
                 Thread.sleep(2000);
@@ -483,7 +518,7 @@ public class Attendance extends Application {
 
         showSplash(
                 initStage,
-                friendTask,
+                task,
                 () -> {
                     try {
                         showMainStage();
@@ -492,7 +527,7 @@ public class Attendance extends Application {
                     }
                 }
         );
-        new Thread(friendTask).start();
+        new Thread(task).start();
     }
 
     @Override
@@ -539,7 +574,7 @@ public class Attendance extends Application {
         attendanceBtn.click();
         Thread.sleep(250); // Dropdown needs to load
         WebElement defaultDate = wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".col-md-8 > .k-widget > .k-dropdown-wrap > .k-input")));
-        if (!defaultDate.getText().contains("--Select One--")) {
+        if (!defaultDate.getText().toLowerCase().contains("select one")) {
             DateTimeFormatter formatter3 = DateTimeFormatter.ofPattern("M/d/yyyy");
             String dateRange = defaultDate.getText().toLowerCase().split("[\\(\\)]")[1];
             String date1 = dateRange.split("-")[0];
@@ -600,8 +635,13 @@ public class Attendance extends Application {
             DateTimeFormatter formatterY = DateTimeFormatter.ofPattern("yyyy");
 
             WebElement date = driver.findElement(By.id("AttendanceDate"));
-            date.clear();
+//            date.clear();
             date.sendKeys(Keys.BACK_SPACE);
+            date.sendKeys(Keys.ARROW_LEFT);
+            date.sendKeys(Keys.BACK_SPACE);
+            date.sendKeys(Keys.ARROW_LEFT);
+            date.sendKeys(Keys.BACK_SPACE);
+            date.sendKeys(Keys.ARROW_LEFT);
             date.sendKeys(startDate.format(formatterM));
             date.sendKeys(Keys.ARROW_RIGHT);
             date.sendKeys(Keys.BACK_SPACE);
