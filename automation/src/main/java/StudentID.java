@@ -1,4 +1,7 @@
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -43,20 +46,24 @@ import java.util.*;
  * Created by Admin on 2/13/2019.
  */
 public class StudentID extends Application {
+    ChromeDriver driver;
+    WebDriverWait wait;
     XSSFWorkbook workbook;
     XSSFSheet sheet;
     FileOutputStream fos = null;
     OutputStream output = null;
-    Properties prop = new Properties();
+    Properties prop;
     String currentDir = System.getProperty("user.dir");
     String PATH = currentDir + "\\reports";
     boolean isLoggedIn = false;
+    boolean canExit = true;
     CellStyle successCell;
     CellStyle failCell;
     DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("M-d-yyyy");
     DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("h:mm a");
     DecimalFormat truncate = new DecimalFormat("#.##");
     DecimalFormat percentage = new DecimalFormat("#%");
+    TextArea console;
 
     private class Student {
         String name;
@@ -152,8 +159,11 @@ public class StudentID extends Application {
         return students;
     }
 
-    public void login(ChromeDriver driver, WebDriverWait wait, String user, String pass) {
+    public void login(String user, String pass) {
         if (!isLoggedIn) {
+            Platform.runLater(() -> console.setText(console.getText() + "\nLogging in to Radius..."));
+            driver = ChromeDriverSingleton.getInstance(); // singleton
+            wait = new WebDriverWait(driver,10);
             driver.get("http://radius.mathnasium.com");
             WebElement radiusUser = driver.findElement(By.id("UserName"));
             radiusUser.sendKeys(user);
@@ -162,13 +172,16 @@ public class StudentID extends Application {
             radiusPass.submit();
             WebElement signedIn = wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".m-l-md")));
             if (signedIn.getText().toLowerCase().equals("signed in as "+user)) {
+                Platform.runLater(() -> console.setText(console.getText() + "\nSigned in as "+user));
                 System.out.println(signedIn.getText());
                 isLoggedIn = true;
             }
         }
     }
 
-    public boolean searchStudent(ChromeDriver driver, WebDriverWait wait, String studentName) throws InterruptedException, IOException {
+    public boolean searchStudent(String studentName) throws InterruptedException, IOException {
+        Platform.runLater(() -> console.setText("Searching for " + studentName + "..."));
+        System.out.print("Finding student ID for " + studentName + "... ");
         WebElement searchIcon = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("SearchIcon")));
         searchIcon.click();
         WebElement searchBar = wait.until(ExpectedConditions.elementToBeClickable(By.id("ContactSearch")));
@@ -188,14 +201,15 @@ public class StudentID extends Application {
         if (gridSearch.size() == 1) {
             WebElement studentHref = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("table.k-selectable > tbody > tr:first-child > td:nth-child(3) > a")));
             studentHref.click();
-            System.out.print("Finding student ID for " + studentName + "... ");
             String splitURL[] =  driver.getCurrentUrl().split("/");
             prop.setProperty(studentName, splitURL[splitURL.length - 1]);
+            Platform.runLater(() -> console.setText("SUCCESS: Key/pair created! " + studentName+"="+splitURL[splitURL.length - 1]));
             System.out.println(studentName+"="+splitURL[splitURL.length - 1]);
             return true;
         }
         else {
-            System.out.println("No results - name does not match for " + studentName);
+            Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Multiple or no results for " + studentName));
+            System.out.println("ERROR: Multiple or no results for " + studentName);
             prop.setProperty(studentName, "null");
             WebElement cancel = driver.findElement(By.cssSelector("#SearchModal > .m-b-sm > .btn"));
             cancel.click();
@@ -204,7 +218,7 @@ public class StudentID extends Application {
         }
     }
 
-    public static int getEnrollmentID(String studentName, String studentID, String cookie) throws Exception {
+    public int getEnrollmentID(String studentName, String studentID, String cookie) throws Exception {
         URL url = new URL("https://radius.mathnasium.com/Student/GetCurrentEnrollmentIds?studentId="+studentID);
         Map<String,Object> params = new LinkedHashMap<>();
 
@@ -225,27 +239,39 @@ public class StudentID extends Application {
         conn.setDoOutput(true);
         conn.getOutputStream().write(postDataBytes);
 
-//        Reader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
-//        StringBuffer response = new StringBuffer();
-//        for (int c; (c = in.read()) >= 0;)
-//            response.append((char)c);
-//        System.out.println(response.toString());
-        JsonReader jsonReader = Json.createReader(new InputStreamReader(conn.getInputStream()));
-        JsonArray array = jsonReader.readArray();
-        jsonReader.close();
+        if (conn.getResponseCode() == 200) {
+            JsonReader jsonReader = Json.createReader(new InputStreamReader(conn.getInputStream()));
+            JsonArray array = jsonReader.readArray();
+            jsonReader.close();
 
-        if (array.size() > 0) {
-            System.out.println("Enrollment ID of " + studentName + ": " + array.getJsonObject(0).getInt("currentEnrollmentId"));
-            return array.getJsonObject(0).getInt("currentEnrollmentId");
+            if (array.size() > 0) {
+                int enrollmentID = array.getJsonObject(0).getInt("currentEnrollmentId");
+                if (enrollmentID != 0) {
+                    Platform.runLater(() -> console.setText("SUCCESS: Found enrollment ID: " + enrollmentID));
+                    System.out.println("SUCCESS: Found Enrollment ID: " + enrollmentID);
+                    return enrollmentID;
+                }
+                else {
+                    Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Not currently enrolled! "));
+                    System.out.println("ERROR: Not currently enrolled!");
+                    return 0;
+                }
+            }
+            else {
+                Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Enrollment not found! "));
+                System.out.println("ERROR: Enrollment not found!");
+                return -1;
+            }
         }
         else {
+            Platform.runLater(() -> console.setText(console.getText() + "ERROR: Enrollment not found! "));
             System.out.println("ERROR: Enrollment not found!");
             return -1;
         }
     }
 
-    public static void addAttendance(String studentID, String attDate, String arrTime,
-            String depTime, int enrollmentID, String cookie) throws Exception {
+    public void addAttendance(String studentID, String attDate, String arrTime,
+                              String depTime, int enrollmentID, String cookie) throws Exception {
         URL url = new URL("https://radius.mathnasium.com/Student/CreateAttendance");
         String json = "{" +
                 "\"studentId\": \"" + studentID + "\"," +
@@ -263,7 +289,8 @@ public class StudentID extends Application {
         conn.setDoOutput(true);
         conn.getOutputStream().write(json.getBytes("UTF-8"));
         if (conn.getResponseCode() == 200) {
-            System.out.print("Success! ");
+            Platform.runLater(() -> console.setText(console.getText() + "\nSUCCESS: Added attendance!"));
+            System.out.print("SUCCESS! ");
         }
     }
 
@@ -321,25 +348,35 @@ public class StudentID extends Application {
 
         // Progress Bar
         Stage progressStage = new Stage();
+        GridPane progressGrid = new GridPane();
+        progressGrid.setAlignment(Pos.CENTER);
         StackPane stack = new StackPane();
         ProgressBar progressBar = new ProgressBar();
-        Label msg = new Label();
-        stack.getChildren().addAll(progressBar, msg);
-        progressStage.setScene(new Scene(stack, 300, 300));
-        progressStage.setAlwaysOnTop(true);
+        progressBar.setMinWidth(290);
+        Label progressPercent = new Label();
+        stack.getChildren().addAll(progressBar, progressPercent);
+        progressGrid.add(stack, 0,0);
+        Label progressStatus = new Label("");
+        progressGrid.add(progressStatus, 0,1);
+        console = new TextArea();
+        console.setEditable(false);
+        ScrollPane dps = new ScrollPane(console);
+        dps.setMaxHeight(100);
+        dps.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        dps.setFitToHeight(true);
+        progressGrid.add(dps, 0,3);
+        progressStage.setScene(new Scene(progressGrid, 350, 250));
+//        progressStage.setAlwaysOnTop(true);
+        StringProperty status = new SimpleStringProperty();
+        status.setValue("");
 
         Button btn = new Button("Start");
         btn.setOnAction(event -> {
-//            btn.setDisable(true);
-
             File arrival = validateExcelFile(attendanceDate1.getValue(), attendanceDate1.getValue());
             if (arrival != null && arrival.exists()) {
 
 //            System.setProperty("webdriver.chrome.driver", System.getProperty("user.dir") + "\\src\\chromedriver.exe");
-//            ChromeDriver driver = new ChromeDriver();
-                ChromeDriver driver = ChromeDriverSingleton.getInstance(); // singleton
-                WebDriverWait wait = new WebDriverWait(driver,10);
-
+//            driver = new ChromeDriver();
                 long startTime = System.currentTimeMillis();
                 Task task = new Task<Void>() {
                     @Override
@@ -347,93 +384,100 @@ public class StudentID extends Application {
                         HashMap<String, Student> students = parseSheet(arrival); // Parse through Excel
                         LocalDate startDate = attendanceDate1.getValue();
                         FileInputStream input = new FileInputStream("student.properties");
+                        prop = new Properties();
                         prop.load(input);
                         input.close();
 
-                        try {
-                            output = new FileOutputStream("student.properties");
-                            int itr = 0;
-                            for (String key : students.keySet()) {
-                                Student student = students.get(key);
-                                updateProgress(itr, students.size());
-                                updateMessage("Adding attendance for " + student.name +
-                                        "..." + percentage.format((double) itr/students.size()) + " done.");
+                        output = new FileOutputStream("student.properties");
+                        int itr = 0;
+                        for (String key : students.keySet()) {
+                            Student student = students.get(key);
+                            updateProgress(itr, students.size());
+                            Platform.runLater(() -> status.setValue("Adding attendance for " + student.name));
+                            updateMessage(percentage.format((double) itr/students.size()));
 
-                                if (student.name.equals("WRONG FORMAT")) {
-                                    setStatus(student.name, false, sheet, arrival, key);
-                                    itr++;
-                                    continue;
-                                }
-                                else if (prop.get(student.name) != null) {
-                                    if (prop.get(student.name).equals("null")) {
-                                        setStatus(student.name, false, sheet, arrival, key);
-                                        itr++;
-                                        continue;
-                                    }
-                                    else {
-                                        System.out.print("Student key/pair exists! ");
-                                        System.out.println(student.name + "=" + prop.getProperty(student.name));
-                                        // Success
-                                    }
-                                }
-                                else {
-                                    // Login to Radius
-                                    login(driver, wait, radiusUserTextField.getText(), radiusPWTextField.getText());
-                                    if (!searchStudent(driver, wait, student.name)) {
-                                        setStatus(student.name, false, sheet, arrival, key); // Search for student ID
-                                        itr++;
-                                        continue;
-                                    }
-                                }
-
-                                String cookie = "";
-                                int enrollmentID = getEnrollmentID(student.name, prop.getProperty(student.name), cookie);
-                                if (enrollmentID < 0) {
+                            if (student.name.equals("WRONG FORMAT")) {
+                                setStatus(student.name, false, sheet, arrival, key);
+                                itr++;
+                                continue;
+                            }
+                            else if (prop.get(student.name) != null) {
+                                if (prop.get(student.name).equals("null")) {
                                     setStatus(student.name, false, sheet, arrival, key);
                                     itr++;
                                     continue;
                                 }
                                 else {
-                                    LocalTime arrTime = LocalTime.parse(student.startTime, timeFormatter);
-                                    LocalTime depTime = LocalTime.parse(student.endTime, timeFormatter);
-                                    LocalDateTime dateTime = startDate.atTime(5,0,0,0);
-                                    LocalDateTime arrDateTime = startDate.atTime(arrTime.plusHours(5));
-                                    LocalDateTime depDateTime = startDate.atTime(depTime.plusHours(5));
-                                    String jsonDate1 = dateTime.format(DateTimeFormatter.ISO_DATE_TIME)+".000Z";
-                                    String jsonDate2 = arrDateTime.format(DateTimeFormatter.ISO_DATE_TIME)+".000Z";
-                                    String jsonDate3 = depDateTime.format(DateTimeFormatter.ISO_DATE_TIME)+".000Z";
-                                    addAttendance(prop.getProperty(student.name), jsonDate1, jsonDate2, jsonDate3, enrollmentID, cookie);
-                                    // Success -> add check mark!
-                                    setStatus(student.name, true, sheet, arrival, key);
+                                    System.out.print("Student key/pair exists! ");
+                                    System.out.println(student.name + "=" + prop.getProperty(student.name));
+                                    Platform.runLater(() -> console.setText(console.getText() + "\nStudent key/pair exists! "));
+                                    Platform.runLater(() -> console.setText(console.getText() + student.name + "=" + prop.getProperty(student.name)));
+                                    // Success
+                                }
+                            }
+                            else {
+                                // Login to Radius
+                                login(radiusUserTextField.getText(), radiusPWTextField.getText());
+                                if (!searchStudent(student.name)) {
+                                    setStatus(student.name, false, sheet, arrival, key); // Search for student ID
                                     itr++;
+                                    continue;
                                 }
                             }
-                            prop.store(output, null);
+                            Platform.runLater(() -> status.setValue("Adding attendance for " + student.name));
 
-                        } catch (IOException io) {
-                            io.printStackTrace();
-                        } finally {
-                            if (output != null) {
-                                try {
-                                    output.close();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
+                            String cookie = "";
+                            int enrollmentID = getEnrollmentID(student.name, prop.getProperty(student.name), cookie);
+                            if (enrollmentID < 0) {
+                                setStatus(student.name, false, sheet, arrival, key);
+                                itr++;
+                                continue;
                             }
-
+                            else if (enrollmentID == 0) {
+                                setStatus(student.name, true, sheet, arrival, key); // Checks off on Excel but does not attempt to add on Radius
+                                itr++;
+                                continue;
+                            }
+                            else {
+                                LocalTime arrTime = LocalTime.parse(student.startTime, timeFormatter);
+                                LocalTime depTime = LocalTime.parse(student.endTime, timeFormatter);
+                                LocalDateTime dateTime = startDate.atTime(5,0,0,0);
+                                LocalDateTime arrDateTime = startDate.atTime(arrTime.plusHours(5));
+                                LocalDateTime depDateTime = startDate.atTime(depTime.plusHours(5));
+                                String jsonDate1 = dateTime.format(DateTimeFormatter.ISO_DATE_TIME)+".000Z";
+                                String jsonDate2 = arrDateTime.format(DateTimeFormatter.ISO_DATE_TIME)+".000Z";
+                                String jsonDate3 = depDateTime.format(DateTimeFormatter.ISO_DATE_TIME)+".000Z";
+                                addAttendance(prop.getProperty(student.name), jsonDate1, jsonDate2, jsonDate3, enrollmentID, cookie);
+                                // Success -> add check mark!
+                                Platform.runLater(() -> status.setValue("Success! Added attendance for " + student.name));
+                                setStatus(student.name, true, sheet, arrival, key);
+                                itr++;
+                            }
                         }
+//                        prop.store(output, null);
+
+                        updateProgress(1, 1);
+                        updateMessage("Done.");
 
                         return null;
                     }
                 };
                 task.setOnScheduled(event0 -> {
+                    btn.setDisable(true);
                     progressStage.show();
+                    canExit = false;
                 });
 
                 task.setOnFailed(event1 -> {
+                    try {
+                        stop();
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
                     long endTime = System.currentTimeMillis();
-
                     btn.setDisable(false);
+                    progressStage.hide();
+                    canExit = true;
                     Exception e = (Exception) task.getException();
                     Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setHeaderText("Something went wrong!");
@@ -441,17 +485,14 @@ public class StudentID extends Application {
                             truncate.format((double) (endTime - startTime) / 60000) + " minutes.");
                     alert.getDialogPane().setExpandableContent(new ScrollPane(new TextArea(e.toString())));
                     alert.showAndWait();
-
                     e.printStackTrace();
-                    driver.get("https://radius.mathnasium.com"); // singleton
-                    try {
-                        stop();
-                    } catch (IOException e1) {
-                        e1.printStackTrace();
-                    }
+                    if (driver != null)
+                        driver.get("https://radius.mathnasium.com"); // singleton
                 });
                 task.setOnCancelled(event2 -> {
                     btn.setDisable(false);
+                    progressStage.hide();
+                    canExit = true;
                     try {
                         stop();
                     } catch (IOException e1) {
@@ -459,26 +500,25 @@ public class StudentID extends Application {
                     }
                 });
                 task.setOnSucceeded(event3 -> {
-                    long endTime = System.currentTimeMillis();
-
-                    btn.setDisable(false);
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setHeaderText("Success!");
-                    alert.setContentText("Completed attendance automation. Runtime of " +
-                            truncate.format((double) (endTime - startTime) / 60000) + " minutes.");
-                    alert.showAndWait();
-
-                    btn.setDisable(false);
                     try {
                         stop();
                     } catch (IOException e1) {
                         e1.printStackTrace();
                     }
+                    long endTime = System.currentTimeMillis();
+                    btn.setDisable(false);
+                    progressStage.hide();
+                    canExit = true;
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setHeaderText("Success!");
+                    alert.setContentText("Completed attendance automation. Runtime of " +
+                            truncate.format((double) (endTime - startTime) / 60000) + " minutes.");
+                    alert.showAndWait();
                 });
 
                 progressBar.progressProperty().bind(task.progressProperty());
-                msg.textProperty().bind(task.progressProperty().asString());
-                msg.textProperty().bind(task.messageProperty());
+                progressPercent.textProperty().bind(task.messageProperty());
+                progressStatus.textProperty().bind(status);
                 new Thread(task).start();
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -487,11 +527,26 @@ public class StudentID extends Application {
                 alert.showAndWait();
             }
         });
+
         HBox hbBtn = new HBox(10);
         hbBtn.getChildren().add(btn);
         grid.add(hbBtn, 1, 11);
         primaryStage.setScene(new Scene(sp, 330, 330));
         primaryStage.show();
+
+        primaryStage.setOnCloseRequest(e -> {
+            if (!canExit) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setHeaderText("Cannot exit automation.");
+                alert.setContentText("Please wait for the process to finish.");
+                alert.showAndWait();
+                e.consume();
+            }
+            else {
+//                driver.close();
+                progressStage.close();
+            }
+        });
     }
 
     public static void main(String[] args) {
@@ -549,7 +604,7 @@ public class StudentID extends Application {
     }
 
     public void setStatus(String studentName, boolean attendanceAdded,
-          XSSFSheet sheet, File arrival, String key) throws IOException {
+                          XSSFSheet sheet, File arrival, String key) throws IOException {
         Iterator<Row> rowIt = sheet.iterator();
         rowIt.next();
         fos = new FileOutputStream(arrival);
