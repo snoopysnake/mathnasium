@@ -37,6 +37,8 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static java.time.temporal.ChronoUnit.DAYS;
+
 /**
  * Created by Admin on 2/13/2019.
  */
@@ -53,7 +55,8 @@ public class StudentID extends Application {
     CellStyle failCell;
     int fails;
     int succs;
-    DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("M-d-yyyy");
+    DateTimeFormatter fileDateFormat = DateTimeFormatter.ofPattern("M-d-yyyy");
+    DateTimeFormatter cellDateFormat = DateTimeFormatter.ofPattern("M/d/yyyy");
     DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("h:mm a");
     DecimalFormat truncate = new DecimalFormat("#.##");
     DecimalFormat percentage = new DecimalFormat("#%");
@@ -109,16 +112,26 @@ public class StudentID extends Application {
             String splitName[] = name.split(", ");
 
             if (splitName.length > 0) {
-                splitName[0] = splitName[0].replaceAll("\\(.*\\)", "").trim(); // removes parentheses
-                splitName[1] = splitName[1].replaceAll("\\(.*\\)", "").trim();
+                splitName[0] = splitName[0].replaceAll("\\(.*\\)", ""); // removes parentheses + content inside
+                splitName[0] = splitName[0].replaceAll("\\(",""); // removes stray opening parentheses
+                splitName[0] = splitName[0].replaceAll("\\)","").trim(); // removes stray closing parentheses
+                splitName[1] = splitName[1].replaceAll("\\(.*\\)", "");
+                splitName[1] = splitName[1].replaceAll("\\(","");
+                splitName[1] = splitName[1].replaceAll("\\)","").trim();
+
                 name = splitName[1] + " " + splitName[0];
             }
             else name = "WRONG FORMAT";
         }
     }
 
-    public HashMap<String, Student> parseSheet(File arrival) throws IOException, ParseException {
-        HashMap<String, Student> students = new HashMap<>();
+    public ArrayList<HashMap<String, Student>> parseSheet(File arrival, LocalDate startDate, LocalDate endDate) throws IOException, ParseException {
+        int days = (int) DAYS.between(startDate, endDate) + 1;
+        ArrayList<HashMap<String,Student>> studentsList = new ArrayList<>();
+        for (int i = 0; i < days; i++) {
+            HashMap<String, Student> students = new HashMap<>();
+            studentsList.add(i, students);
+        }
         FileInputStream fis = new FileInputStream(arrival);
         workbook = new XSSFWorkbook(fis);
         successCell = workbook.createCellStyle();
@@ -135,14 +148,17 @@ public class StudentID extends Application {
         rowIt.next();
         while (rowIt.hasNext()) {
             Row row = rowIt.next();
+            LocalDate date = LocalDate.parse(row.getCell(0).toString(),cellDateFormat);
             String timeFrame = row.getCell(2).toString();
             String id = row.getCell(3).toString();
             String name = row.getCell(4).toString();
             String checkIn = row.getCell(5).toString();
+
+            int dateIndex = (int) DAYS.between(startDate, date);
             if ((row.getCell(9) != null && !row.getCell(9).toString().equals("\u2714")) || row.getCell(9) == null) {
-                if (!students.containsKey(id))
-                    students.put(id, new Student(name, checkIn, checkIn, timeFrame));
-                else students.get(id).addTime(checkIn);
+                if (!studentsList.get(dateIndex).containsKey(id))
+                    studentsList.get(dateIndex).put(id, new Student(name, checkIn, checkIn, timeFrame));
+                else studentsList.get(dateIndex).get(id).addTime(checkIn);
             }
 
 //            if ((row.getCell(9) != null && !row.getCell(9).toString().equals("\u2714") &&
@@ -158,13 +174,15 @@ public class StudentID extends Application {
         }
         fis.close();
 
-        for (String key : students.keySet()) {
-            Student student = students.get(key);
-            student.correctTime();
-            student.correctName();
+        for (int i = 0; i < studentsList.size(); i++) {
+            for (String key : studentsList.get(i).keySet()) {
+                Student student = studentsList.get(i).get(key);
+                student.correctTime();
+                student.correctName();
 //            System.out.println(student.name + " " + student.startTime + " " + student.endTime);  // Excel log info
+            }
         }
-        return students;
+        return studentsList;
     }
 
     public String searchStudent(String studentName, String cookie) throws Exception {
@@ -373,11 +391,14 @@ public class StudentID extends Application {
         attendanceDate1.getEditor().setStyle("-fx-opacity: 1");
         grid.add(attendanceDate1, 1, 3);
 
-//        Label attendance2 = new Label("End Date:");
-//        grid.add(attendance2, 0, 4);
-//        DatePicker attendanceDate2 = new DatePicker();
-//        attendanceDate2.setValue(LocalDate.now().minusDays(1));
-//        grid.add(attendanceDate2, 1, 4);
+        Label attendance2 = new Label("End Date:");
+        grid.add(attendance2, 0, 4);
+        DatePicker attendanceDate2 = new DatePicker();
+        attendanceDate2.setValue(LocalDate.now().minusDays(1));
+        attendanceDate2.getEditor().setDisable(true);
+        attendanceDate2.setStyle("-fx-opacity: 1");
+        attendanceDate2.getEditor().setStyle("-fx-opacity: 1");
+        grid.add(attendanceDate2, 1, 4);
 
         Button dirBtn = new Button("Change Reports Folder");
         dirBtn.setOnAction(event -> {
@@ -416,7 +437,9 @@ public class StudentID extends Application {
 
         Button btn = new Button("Start");
         btn.setOnAction(event -> {
-            File arrival = validateExcelFile(attendanceDate1.getValue(), attendanceDate1.getValue());
+            LocalDate startDate = attendanceDate1.getValue();
+            LocalDate endDate = attendanceDate2.getValue();
+            File arrival = validateExcelFile(startDate, endDate);
             succs = 0;
             fails = 0;
             if (arrival != null && arrival.exists()) {
@@ -424,8 +447,7 @@ public class StudentID extends Application {
                 Task task = new Task<Void>() {
                     @Override
                     protected Void call() throws Exception {
-                        HashMap<String, Student> students = parseSheet(arrival); // Parse through Excel
-                        LocalDate startDate = attendanceDate1.getValue();
+                        ArrayList<HashMap<String, Student>> studentsList = parseSheet(arrival, startDate, endDate); // Parse through Excel
                         FileInputStream input = new FileInputStream("student.properties");
                         prop = new Properties();
                         prop.load(input);
@@ -434,73 +456,77 @@ public class StudentID extends Application {
                         String cookie = "";
                         output = new FileOutputStream("student.properties");
                         int itr = 0;
-                        for (String key : students.keySet()) {
-                            Student student = students.get(key);
-                            updateProgress(itr, students.size());
-                            Platform.runLater(() -> status.setValue("Adding attendance for " + student.name));
-                            System.out.println("Adding attendance for " + student.name);
-                            updateMessage(percentage.format((double) itr/students.size()));
+                        int total = 0;
+                        for (int i = 0; i < studentsList.size(); i++) {
+                            // Get total rows
+                            total += studentsList.get(i).size();
+                        }
+                        for (int i = 0; i < studentsList.size(); i++) {
+                            HashMap<String, Student> students = studentsList.get(i);
+                            LocalDate date = startDate.plusDays(i);
+                            for (String key : students.keySet()) {
+                                Student student = students.get(key);
+                                updateProgress(itr, total);
+                                Platform.runLater(() -> status.setValue("Adding attendance for " + student.name +
+                                        " on " + cellDateFormat.format(date)));
+                                System.out.println("Adding attendance for " + student.name);
+                                updateMessage(percentage.format((double) itr / total));
 
-                            if (student.name.equals("WRONG FORMAT")) {
-                                setStatus(student.name, false, sheet, arrival, key);
-                                itr++;
-                                continue;
-                            }
-                            else if (prop.get(student.name) != null) {
-                                if (prop.get(student.name).equals("null")) {
-                                    System.out.println("ERROR: Student ID could not be found");
-                                    setStatus(student.name, false, sheet, arrival, key);
+                                if (student.name.equals("WRONG FORMAT")) {
+                                    setStatus(student.name, date, false, sheet, arrival, key);
                                     itr++;
                                     continue;
+                                } else if (prop.get(student.name) != null) {
+                                    if (prop.get(student.name).equals("null")) {
+                                        System.out.println("ERROR: Student ID could not be found");
+                                        setStatus(student.name, date, false, sheet, arrival, key);
+                                        itr++;
+                                        continue;
+                                    } else {
+                                        System.out.print("Student key/pair exists! ");
+                                        System.out.println(student.name + "=" + prop.getProperty(student.name));
+                                        Platform.runLater(() -> console.setText(console.getText() + "\nStudent key/pair exists! "));
+                                        Platform.runLater(() -> console.setText(console.getText() + student.name + "=" + prop.getProperty(student.name)));
+                                        // Success
+                                    }
+                                } else {
+                                    String studentID = searchStudent(student.name, cookie);
+                                    prop.setProperty(student.name, studentID);
+                                    if (studentID.equals("null")) {
+                                        setStatus(student.name, date, false, sheet, arrival, key);
+                                        itr++;
+                                        continue;
+                                    }
                                 }
-                                else {
-                                    System.out.print("Student key/pair exists! ");
-                                    System.out.println(student.name + "=" + prop.getProperty(student.name));
-                                    Platform.runLater(() -> console.setText(console.getText() + "\nStudent key/pair exists! "));
-                                    Platform.runLater(() -> console.setText(console.getText() + student.name + "=" + prop.getProperty(student.name)));
-                                    // Success
-                                }
-                            }
-                            else {
-                                String studentID = searchStudent(student.name, cookie);
-                                prop.setProperty(student.name, studentID);
-                                if (studentID.equals("null")) {
-                                    setStatus(student.name, false, sheet, arrival, key);
+
+                                int enrollmentID = getEnrollmentID(prop.getProperty(student.name), cookie);
+                                if (enrollmentID < 0) {
+                                    setStatus(student.name, date, false, sheet, arrival, key);
                                     itr++;
                                     continue;
-                                }
-                            }
-
-                            int enrollmentID = getEnrollmentID(prop.getProperty(student.name), cookie);
-                            if (enrollmentID < 0) {
-                                setStatus(student.name, false, sheet, arrival, key);
-                                itr++;
-                                continue;
-                            }
-                            else if (enrollmentID == 0) {
-                                setStatus(student.name, true, sheet, arrival, key); // Checks off on Excel but does not attempt to add on Radius
-                                itr++;
-                                continue;
-                            }
-                            else {
-                                LocalTime arrTime = LocalTime.parse(student.startTime, timeFormatter);
-                                LocalTime depTime = LocalTime.parse(student.endTime, timeFormatter);
-                                LocalDateTime dateTime = startDate.atTime(5,0,0,0);
-                                LocalDateTime arrDateTime = startDate.atTime(arrTime.plusHours(5));
-                                LocalDateTime depDateTime = startDate.atTime(depTime.plusHours(5));
-                                String jsonDate1 = dateTime.format(DateTimeFormatter.ISO_DATE_TIME)+".000Z";
-                                String jsonDate2 = arrDateTime.format(DateTimeFormatter.ISO_DATE_TIME)+".000Z";
-                                String jsonDate3 = depDateTime.format(DateTimeFormatter.ISO_DATE_TIME)+".000Z";
-                                if (addAttendance(prop.getProperty(student.name), jsonDate1, jsonDate2, jsonDate3, enrollmentID, cookie)) {
-                                    // Success -> add check mark!
-                                    Platform.runLater(() -> status.setValue("Success! Added attendance for " + student.name));
-                                    setStatus(student.name, true, sheet, arrival, key);
+                                } else if (enrollmentID == 0) {
+                                    setStatus(student.name, date, true, sheet, arrival, key); // Checks off on Excel but does not attempt to add on Radius
                                     itr++;
-                                }
-                                else {
-                                    Platform.runLater(() -> status.setValue("Failed to add attendance for " + student.name));
-                                    setStatus(student.name, false, sheet, arrival, key);
-                                    itr++;
+                                    continue;
+                                } else {
+                                    LocalTime arrTime = LocalTime.parse(student.startTime, timeFormatter);
+                                    LocalTime depTime = LocalTime.parse(student.endTime, timeFormatter);
+                                    LocalDateTime dateTime = date.atTime(5, 0, 0, 0);
+                                    LocalDateTime arrDateTime = date.atTime(arrTime.plusHours(5));
+                                    LocalDateTime depDateTime = date.atTime(depTime.plusHours(5));
+                                    String jsonDate1 = dateTime.format(DateTimeFormatter.ISO_DATE_TIME) + ".000Z";
+                                    String jsonDate2 = arrDateTime.format(DateTimeFormatter.ISO_DATE_TIME) + ".000Z";
+                                    String jsonDate3 = depDateTime.format(DateTimeFormatter.ISO_DATE_TIME) + ".000Z";
+                                    if (addAttendance(prop.getProperty(student.name), jsonDate1, jsonDate2, jsonDate3, enrollmentID, cookie)) {
+                                        // Success -> add check mark!
+                                        Platform.runLater(() -> status.setValue("Success! Added attendance for " + student.name));
+                                        setStatus(student.name, date, true, sheet, arrival, key);
+                                        itr++;
+                                    } else {
+                                        Platform.runLater(() -> status.setValue("Failed to add attendance for " + student.name));
+                                        setStatus(student.name, date, false, sheet, arrival, key);
+                                        itr++;
+                                    }
                                 }
                             }
                         }
@@ -620,9 +646,11 @@ public class StudentID extends Application {
     }
 
     public File validateExcelFile(LocalDate startDate, LocalDate endDate) {
-//        System.out.println("Start: " + startDate.format(dateFormat)); // Excel log info
-//            System.out.println("End: " + endDate.format(dateFormat));
-
+        System.out.println("Start: " + startDate.format(fileDateFormat)); // Excel log info
+            System.out.println("End: " + endDate.format(fileDateFormat));
+        if (endDate.isBefore(startDate)) {
+            return null;
+        }
         File dir1 = new File(PATH);
 //        File dir1 = new File("C:\\Users\\Mathnasium\\Downloads");
         System.out.println(dir1);
@@ -630,7 +658,7 @@ public class StudentID extends Application {
             return null;
         }
         File[] foundFiles = dir1.listFiles((dir, name) -> name.startsWith("Client Arrivals Report " +
-                startDate.format(dateFormat) + " - " + endDate.format(dateFormat)));
+                startDate.format(fileDateFormat) + " - " + endDate.format(fileDateFormat)));
 //        File[] foundFiles = dir1.listFiles((dir, name) -> name.startsWith("Client Arrivals Report "));
         if (foundFiles.length == 0) {
             return null;
@@ -651,7 +679,7 @@ public class StudentID extends Application {
         }
     }
 
-    public void setStatus(String studentName, boolean attendanceAdded,
+    public void setStatus(String studentName, LocalDate date, boolean attendanceAdded,
                           XSSFSheet sheet, File arrival, String key) throws IOException {
         Iterator<Row> rowIt = sheet.iterator();
         rowIt.next();
@@ -659,16 +687,18 @@ public class StudentID extends Application {
         while (rowIt.hasNext()) {
             Row row = rowIt.next();
             if (row.getCell(3).toString().equals(key)) {
-                row.createCell(9);
-                if (attendanceAdded) {
-                    System.out.println("Added attendance for " + studentName);
-                    row.getCell(9).setCellValue("\u2714");
-                    fillInCells(row, successCell);
-                    succs++;
-                } else {
-                    row.getCell(9).setCellValue("\u2718");
-                    fillInCells(row, failCell);
-                    fails++;
+                if (LocalDate.parse(row.getCell(0).toString(),cellDateFormat).equals(date)) {
+                    row.createCell(9);
+                    if (attendanceAdded) {
+                        System.out.println("Added attendance for " + studentName);
+                        row.getCell(9).setCellValue("\u2714");
+                        fillInCells(row, successCell);
+                        succs++;
+                    } else {
+                        row.getCell(9).setCellValue("\u2718");
+                        fillInCells(row, failCell);
+                        fails++;
+                    }
                 }
             }
         }
