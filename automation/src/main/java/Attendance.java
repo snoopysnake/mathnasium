@@ -53,6 +53,7 @@ public class Attendance extends Application {
     String PATH = currentDir + "\\reports";
     boolean canExit = true;
     CellStyle successCell, failCell;
+    String cellMsg = "";
     int fails, succs;
     DateTimeFormatter fileDateFormat = DateTimeFormatter.ofPattern("M-d-yyyy");
     DateTimeFormatter cellDateFormat = DateTimeFormatter.ofPattern("M/d/yyyy");
@@ -186,7 +187,7 @@ public class Attendance extends Application {
     }
 
     public String searchStudent(String studentName) throws Exception {
-        Platform.runLater(() -> console.setText(console.getText() + "\nSearching for "+studentName + "..."));
+        Platform.runLater(() -> console.appendText("\nSearching for "+studentName + "..."));
         URL url = new URL("https://radius.mathnasium.com/Base/SearchGrid_Read");
         Map<String,Object> params = new LinkedHashMap<>();
         params.put("__RequestVerificationToken", requestVerificationToken);
@@ -226,25 +227,28 @@ public class Attendance extends Application {
                     String entityType = array.getJsonObject(0).getString("EntityType");
                     String id = array.getJsonObject(0).getString("Id");
                     if (entityType.toLowerCase().equals("student")) {
-                        Platform.runLater(() -> console.setText(console.getText() + "\nSUCCESS: Student found! "));
+                        Platform.runLater(() -> console.appendText("\nSUCCESS: Student found! "));
                         System.out.println("SUCCESS: Student found!");
                         return id;
                     }
                     else {
-                        Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Student info mismatch! "));
+                        Platform.runLater(() -> console.appendText("\nERROR: Student info mismatch! "));
                         System.out.println("ERROR: Student info mismatch!");
+                        cellMsg = "Student info mismatch";
                         return "null";
                     }
                 }
                 else if (array.size() == 0) {
-                    Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Student not found! "));
+                    Platform.runLater(() -> console.appendText("\nERROR: Student not found! "));
                     System.out.println("ERROR: Student not found!");
+                    cellMsg = "Student not found";
                     return "null";
                 }
                 else {
-                    Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Multiple students found! " +
+                    Platform.runLater(() -> console.appendText("\nERROR: Multiple students found! " +
                             "Attempting to find current enrollment..."));
                     System.out.println("ERROR: Multiple students found!");
+                    cellMsg = "Multiple students found";
                     for (int i = 0; i < array.size(); i++) {
                                             System.out.println(array.getJsonObject(0).toString());
 
@@ -252,27 +256,30 @@ public class Attendance extends Application {
                         String id = array.getJsonObject(0).getString("Id");
                         if (entityType.toLowerCase().equals("student")) { // Sety has EntityType of Account
                             if (getEnrollmentID(id) > 0) {
-                                Platform.runLater(() -> console.setText(console.getText() + "\nSUCCESS: Student found! "));
+                                Platform.runLater(() -> console.appendText("\nSUCCESS: Student found! "));
                                 System.out.println("SUCCESS: Student found!");
                                 return id;
                             }
                         }
 
                     }
-                    Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Student ID could not be found."));
+                    Platform.runLater(() -> console.appendText("\nERROR: Student ID could not be found."));
                     System.out.println("ERROR: Student ID could not be found.");
+                    cellMsg = "Student ID could not be found";
                     return "null";
                 }
             }
             else {
-                Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Student not found! "));
+                Platform.runLater(() -> console.appendText("\nERROR: Student not found! "));
                 System.out.println("ERROR: Student not found!");
+                cellMsg = "Student not found";
                 return "null";
             }
         }
         else {
-            Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Could not make connection! "));
+            Platform.runLater(() -> console.appendText("\nERROR: Could not make connection! "));
             System.out.println("ERROR: Could not make connection!");
+            cellMsg = "Could not make connection";
             return "null";
         }
     }
@@ -311,20 +318,23 @@ public class Attendance extends Application {
                     return enrollmentID;
                 }
                 else {
-                    Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Not currently enrolled! "));
+                    Platform.runLater(() -> console.appendText("\nERROR: Not currently enrolled! "));
                     System.out.println("ERROR: Not currently enrolled!");
+                    cellMsg = "Not currently enrolled";
                     return 0;
                 }
             }
             else {
-                Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Enrollment not found! "));
+                Platform.runLater(() -> console.appendText("\nERROR: Enrollment not found! "));
                 System.out.println("ERROR: Enrollment not found!");
+                cellMsg = "Enrollment not found";
                 return -1;
             }
         }
         else {
-            Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Could not make connection! "));
+            Platform.runLater(() -> console.appendText("\nERROR: Could not make connection! "));
             System.out.println("ERROR: Could not make connection!");
+            cellMsg = "Could not make connection";
             return -1;
         }
     }
@@ -356,20 +366,22 @@ public class Attendance extends Application {
             JsonReader jsonReader = Json.createReader(new InputStreamReader(conn.getInputStream()));
             JsonArray array = jsonReader.readArray();
             if (array.size() == 0) {
-                Platform.runLater(() -> console.setText(console.getText() + "\nSUCCESS: Added attendance!"));
+                Platform.runLater(() -> console.appendText("\nSUCCESS: Added attendance!"));
                 System.out.print("SUCCESS: ");
                 return true;
             }
             else {
                 String err = array.getJsonObject(0).getString("Message");
-                Platform.runLater(() -> console.setText(console.getText() + "\nERROR: " + err));
+                Platform.runLater(() -> console.appendText("\nERROR: " + err));
                 System.out.println("ERROR: " + err);
+                cellMsg = err;
                 return false;
             }
         }
         else {
-            Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Could not make connection! "));
+            Platform.runLater(() -> console.appendText("\nERROR: Could not make connection! "));
             System.out.println("ERROR: Could not make connection!");
+            cellMsg = "Could not make connection";
             return false;
         }
     }
@@ -416,13 +428,14 @@ public class Attendance extends Application {
                         String jsonEndTime = array.getJsonObject(i).getString("DepartureTimeString");
                         if (date.format(cellDateFormat).equals(jsonDate)) {
                             if (jsonStartTime.equals(startTime) && jsonEndTime.equals(endTime)) {
-                                Platform.runLater(() -> console.setText(console.getText() + "\nSUCCESS: Attendance exists!"));
+                                Platform.runLater(() -> console.appendText("\nSUCCESS: Attendance exists!"));
                                 System.out.println("SUCCESS: Attendance exists!");
                                 return true;
                             }
                             else {
-                                Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Student info mismatch! "));
+                                Platform.runLater(() -> console.appendText("\nERROR: Student info mismatch! "));
                                 System.out.println("ERROR: Student info mismatch!");
+                                cellMsg = "Student info mismatch";
                                 return false;
                             }
                         }
@@ -430,20 +443,23 @@ public class Attendance extends Application {
                     return false;
                 }
                 else {
-                    Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Enrollment not found! "));
+                    Platform.runLater(() -> console.appendText("\nERROR: Enrollment not found! "));
                     System.out.println("ERROR: Enrollment not found!");
+                    cellMsg = "Enrollment not found";
                     return false;
                 }
             }
             else {
-                Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Enrollment not found! "));
+                Platform.runLater(() -> console.appendText("\nERROR: Enrollment not found! "));
                 System.out.println("ERROR: Enrollment not found!");
+                cellMsg = "Enrollment not found";
                 return false;
             }
         }
         else {
-            Platform.runLater(() -> console.setText(console.getText() + "\nERROR: Could not make connection! "));
+            Platform.runLater(() -> console.appendText("\nERROR: Could not make connection! "));
             System.out.println("ERROR: Could not make connection!");
+            cellMsg = "Could not make connection";
             return false;
         }
     }
@@ -571,6 +587,7 @@ public class Attendance extends Application {
                                 } else if (prop.get(student.name) != null) {
                                     if (prop.get(student.name).equals("null")) {
                                         System.out.println("ERROR: Student ID could not be found");
+                                        cellMsg = "Student ID could not be found";
                                         setStatus(student.name, date, false, sheet, arrival, key);
                                         itr++;
                                         continue;
@@ -578,7 +595,7 @@ public class Attendance extends Application {
                                         System.out.print("Student key/pair exists! ");
                                         System.out.println(student.name + "=" + prop.getProperty(student.name));
                                         Platform.runLater(() -> console.setText("Student key/pair exists! "));
-                                        Platform.runLater(() -> console.setText(console.getText() + student.name + "=" + prop.getProperty(student.name)));
+                                        Platform.runLater(() -> console.appendText(student.name + "=" + prop.getProperty(student.name)));
                                         // Success
                                     }
                                 } else {
@@ -790,7 +807,7 @@ public class Attendance extends Application {
     }
 
     public void fillInCells(Row row, CellStyle backgroundStyle) {
-        for (int i = 0; i <= 9; i++) {
+        for (int i = 0; i <= 10; i++) {
             row.getCell(i).setCellStyle(backgroundStyle);
         }
     }
@@ -805,13 +822,18 @@ public class Attendance extends Application {
             if (row.getCell(3).toString().equals(key)) {
                 if (LocalDate.parse(row.getCell(0).toString(),cellDateFormat).equals(date)) {
                     row.createCell(9);
+                    row.createCell(10);
                     if (attendanceAdded) {
                         System.out.println("Added attendance for " + studentName);
                         row.getCell(9).setCellValue("\u2714");
+                        row.getCell(10).setCellValue(cellMsg);
+                        cellMsg = "";
                         fillInCells(row, successCell);
                         succs++;
                     } else {
                         row.getCell(9).setCellValue("\u2718");
+                        row.getCell(10).setCellValue(cellMsg);
+                        cellMsg = "";
                         fillInCells(row, failCell);
                         fails++;
                     }
@@ -821,13 +843,22 @@ public class Attendance extends Application {
         workbook.write(fos);
     }
 
-    public void getCredentials() throws FileNotFoundException {
+    public void getCredentials() throws Exception {
         File file = new File("credentials.txt");
         Scanner input = new Scanner(file);
         cookie = input.nextLine();
         input.nextLine();
         requestVerificationToken = input.nextLine();
-
+        if (searchStudent("Test Student").equals("1147558")) { // Simple verification method
+            System.out.println("SUCCESS: Credentials valid!");
+        }
+        else {
+            System.out.println("ERROR: Credentials invalid!");
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setHeaderText("Credentials invalid!");
+            alert.setContentText("Please add new verification token and cookie.");
+            alert.showAndWait();
+        }
         input.close();
     }
 }
