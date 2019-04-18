@@ -1,0 +1,107 @@
+body {
+	display: flex;
+	justify-content: center;
+	margin: 0;
+}
+
+.content {
+	width: 60%;
+	text-align: center;
+	background-color: red;
+	min-height: 100vh;
+}
+
+.row {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	margin-bottom: 20px;
+}
+
+.cell {
+	display: flex;
+	flex-direction: column;
+}
+
+.cell input {	
+	width: 80px;
+	height: 20px;
+	text-align: center;
+}
+
+.session {
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+}
+
+.session > * {
+	margin: 10px;
+}
+
+.manage {
+	justify-content: left;
+	margin-bottom: 0;
+}
+
+.manage input {
+	margin-right: 10px;
+}
+
+.plan {
+	justify-content: center;
+}
+
+.plan table {
+	padding-bottom: 20px;
+	background-color: black;
+	width: 100%;
+}
+
+.plan th {
+	padding-top: 20px;
+}
+
+.plan tr * {
+	height: 40px;
+}
+
+.plan__type {
+	width: 10%;
+}
+
+.plan__type select {
+	width: 80%;
+	text-align: center;
+}
+
+.plan__pages {
+	/*width: 80%;*/
+	display: flex;
+	flex-direction: row;
+}
+
+.plan__pages input {
+	flex: 1;
+}
+
+.plan__mc {
+	width: 10%;
+}
+
+.plan__mc input {
+	width: 80%;
+}
+
+.notes {
+	justify-content: center;
+	/*flex-direction: column;*/
+}
+
+.notes textarea {
+	width: 95%;
+	height: 200px;
+	outline: none;
+	resize: none;
+}
