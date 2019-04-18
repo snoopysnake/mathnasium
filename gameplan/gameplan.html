@@ -9,19 +9,18 @@
 			<h1>Alex Chiang</h1>
 			<article>
 				<div class="row attendance">
-					<div class="cell">
-						<label></label>
-						<input class="initials" type="text" placeholder="Initials">
-						<input type="button" value="Sign in">
+					<div class="cell cell__sign-in">
+						<input id="initials-start" type="text" placeholder="Initials" maxlength="2">
+						<input id="sign-in" type="button" value="Sign in">
 					</div>
 					<div class="cell session">
 						<input type="button" value="Prev">
 						<h2>Session 1</h2>
 						<input type="button" value="Next">
 					</div>
-					<div class="cell">
-						<input class="initials" type="text" placeholder="Initials">
-						<input type="button" value="Sign out">
+					<div class="cell cell__sign-out">
+						<input id="initials-end" type="text" placeholder="Initials" maxlength="2">
+						<input id="sign-out" type="button" value="Sign out">
 					</div>
 				</div>
 				<div class="row manage">
@@ -39,11 +38,11 @@
 								</select>
 							</th>
 							<th class="plan__pages">
-								<input type="button" value="1">
-								<input type="button" value="2">
-								<input type="button" value="3">
-								<input type="button" value="4">
-								<input type="button" value="5">
+								<input class="logged" type="button" value="1">
+								<input class="logged" type="button" value="2">
+								<input class="todo" type="button" value="3">
+								<input class="logged" type="button" value="4">
+								<input class="todo" type="button" value="5">
 								<input type="button" value="6">
 								<input type="button" value="7">
 							</th>
@@ -91,5 +90,11 @@
 				</div>
 			</article>
 		</div>
+		<script
+		  src="https://code.jquery.com/jquery-3.4.0.min.js"
+		  integrity="sha256-BJeo0qm959uMBGb65z40ejJYGSgR7REI4+CW1fNKwOg="
+		  crossorigin="anonymous"></script>
+		<script src="script.js"></script>
+		<script src="moment.js"></script>
 	</body>
 </html>

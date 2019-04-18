@@ -29,6 +29,10 @@ body {
 	text-align: center;
 }
 
+.cell__sign-out {
+	opacity: 0;
+}
+
 .session {
 	flex-direction: row;
 	justify-content: center;
@@ -82,8 +86,22 @@ body {
 	flex-direction: row;
 }
 
-.plan__pages input {
+.plan input {
 	flex: 1;
+	/*background-color: white;*/
+}
+
+.logged {
+	background-color: green;
+	border-style: none;
+}
+
+.complete {
+	background-color: lime;
+}
+
+.todo {
+	background-color: yellow;
 }
 
 .plan__mc {
