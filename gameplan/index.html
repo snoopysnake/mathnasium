@@ -27,9 +27,9 @@
 					<input type="button" value="Del">
 				</div>
 				<div class="cell session">
-					<input type="button" value="Prev">
+					<input id="prev-session" type="button" value="<< Prev">
 					<h2>Session 1</h2>
-					<input type="button" value="Next">
+					<input id="next-session" type="button" value="Next >>">
 				</div>
 				<div class="row plan">
 					<table>
@@ -39,6 +39,9 @@
 									<option>PK</option>
 									<option>FO</option>
 								</select>
+							</th>
+							<th class="plan__num">
+								<input type="text">
 							</th>
 							<th class="plan__pages">
 								<input class="logged" type="button" value="1" disabled="true">
@@ -60,6 +63,9 @@
 									<option>FO</option>
 								</select>
 							</th>
+							<th class="plan__num">
+								<input type="text">
+							</th>
 							<th class="plan__pages">
 								<input class="todo" type="button" value="1">
 								<input class="todo" type="button" value="2">
@@ -76,6 +82,9 @@
 									<option>PK</option>
 									<option>FO</option>
 								</select>
+							</th>
+							<th class="plan__num">
+								<input type="text">
 							</th>
 							<th class="plan__pages">
 								<input class="todo" type="button" value="1">

@@ -30,6 +30,7 @@ body {
 	width: 85%;
 	text-align: center;
 	background-color: #f42941;
+	/*background-color: #a33038;*/
 	min-height: 100vh;
 	border-right: 2.5vw solid #f42941;
 	border-left: 2.5vw solid #f42941;
@@ -92,6 +93,18 @@ select {
 	width: 140px;
 }
 
+#sign-in {
+	height: 25px;
+	background-color: #939495;
+	border: black solid 1px;
+}
+
+#sign-out {
+	height: 25px;
+	background-color: #939495;
+	border: black solid 1px;
+}
+
 .session {
 	flex-direction: row;
 	justify-content: center;
@@ -105,6 +118,23 @@ select {
 
 .session > * {
 	margin: 10px;
+}
+
+#prev-session {
+	margin-right: 30px;
+	height: 25px;
+	background-color: #f42941;
+	color: #a33038;
+	border: #a33038 solid 1px;
+
+}
+
+#next-session {
+	margin-left: 30px;
+	height: 25px;
+	background-color: black;
+	color: white;
+	border: black solid 1px;
 }
 
 .manage {
@@ -132,36 +162,6 @@ select {
 	justify-content: center;
 }
 
-.plan table {
-	padding-bottom: 20px;
-	background-color: black;
-	border: 5px solid black;
-	width: 100%;
-}
-
-.plan th {
-	padding-top: 20px;
-}
-
-.plan tr * {
-	height: 40px;
-}
-
-.plan__type {
-	width: 10%;
-}
-
-.plan__type select {
-	width: 80%;
-	text-align: center;
-}
-
-.plan__pages {
-	/*width: 80%;*/
-	display: flex;
-	flex-direction: row;
-}
-
 .plan input {
 	flex: 1;
 	margin-right: 2px;
@@ -173,6 +173,52 @@ select {
 
 .plan input:disabled {
 	color: black;
+}
+
+.plan table {
+	padding-bottom: 20px;
+	background-color: black;
+	border: 5px solid black;
+	width: 100%;
+}
+
+.plan th {
+	padding-top: 20px;
+}
+
+.plan tr {
+	display: flex;
+}
+
+.plan tr * {
+	height: 40px;
+}
+
+.plan__type {
+	width: 50px;
+}
+
+.plan__type select {
+	width: 100%;
+	text-align: center;
+}
+
+.plan__num {
+	width: 6%;
+	margin-right: 10px;
+}
+
+.plan__num input {
+	padding-left: 3px;
+	padding-right: 3px;
+	width: 100%;
+	font-family: "Avenir Light";
+}
+
+.plan__pages {
+	width: 80%;
+	display: flex;
+	flex-direction: row;
 }
 
 .logged {
@@ -197,7 +243,7 @@ select {
 }
 
 .plan__mc input {
-	width: 80%;
+	width: 100%;
 }
 
 .notes {

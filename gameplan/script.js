@@ -22,7 +22,11 @@ $('#initials-end').keypress(function(e) {
 	}
 });
 
-$('.plan input').each(function() {
+$('.plan__pages input').each(function() {
+	$(this).on('click', setBtn);
+});
+
+$('.plan__mc input').each(function() {
 	$(this).on('click', setBtn);
 });
 
