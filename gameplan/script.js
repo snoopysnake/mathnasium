@@ -45,13 +45,15 @@ function setRow(i) {
 function setBtn() {
 	if ($(this).hasClass('complete')) {
 		$(this).removeClass('complete');
-	}	
-	else if ($(this).hasClass('todo')) {
-		$(this).removeClass('todo');
+		$(this).addClass('todo');
+	}
+	else if ($(this).hasClass('incomplete')) {
+		$(this).removeClass('incomplete');
 		$(this).addClass('complete');
 	}
 	else {
-		$(this).addClass('todo');
+		$(this).addClass('incomplete');
+		$(this).removeClass('todo');
 	}
 
 }

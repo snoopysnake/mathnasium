@@ -1,14 +1,38 @@
+@font-face {
+    font-family: "Avenir Black";
+    src: url("Avenir-Black.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Avenir Light";
+    src: url("AvenirLTStd-Light.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Brianne's Hand";
+    src: url("Briannes_hand.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
 body {
 	display: flex;
 	justify-content: center;
 	margin: 0;
+	font-family: "Avenir Black";
 }
 
 .content {
 	width: 85%;
 	text-align: center;
-	background-color: red;
+	background-color: #f42941;
 	min-height: 100vh;
+	border-right: 2.5vw solid #f42941;
+	border-left: 2.5vw solid #f42941;
 }
 
 .row {
@@ -16,6 +40,26 @@ body {
 	flex-direction: row;
 	justify-content: space-between;
 	margin-bottom: 20px;
+}
+
+#name {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
+#subtitle {
+	margin: 0;
+	margin-bottom: 10px;
+	font-family: "Brianne's Hand";
+	letter-spacing: .04em;
+}
+
+input {
+	font-family: "Avenir Light";
+}
+
+select {
+	font-family: "Avenir Light";
 }
 
 .cell {
@@ -29,8 +73,23 @@ body {
 	text-align: center;
 }
 
+.cell__sign-in {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: "Avenir Light";
+	letter-spacing: .03em;
+	width: 140px;
+}
+
 .cell__sign-out {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: "Avenir Light";
+	letter-spacing: .03em;
 	opacity: 0;
+	width: 140px;
 }
 
 .session {
@@ -38,6 +97,10 @@ body {
 	justify-content: center;
 	align-items: center;
 	text-align: center;
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 10px;
 }
 
 .session > * {
@@ -45,21 +108,34 @@ body {
 }
 
 .manage {
+	position: absolute;
 	justify-content: left;
 	margin-bottom: 0;
+	height: 30px;
 }
 
 .manage input {
 	margin-right: 10px;
+	background-color: black;
+	border: none;
+	color: white;
+	padding-right: 15px;
+	padding-left: 15px;
+}
+
+.manage input:hover {
+	background-color: #939495;
 }
 
 .plan {
+	margin-top: 50px;
 	justify-content: center;
 }
 
 .plan table {
 	padding-bottom: 20px;
 	background-color: black;
+	border: 5px solid black;
 	width: 100%;
 }
 
@@ -88,7 +164,15 @@ body {
 
 .plan input {
 	flex: 1;
+	margin-right: 2px;
+	margin-left: 2px;
+	border: none;
+	font-family: "Avenir Black";
 	/*background-color: white;*/
+}
+
+.plan input:disabled {
+	color: black;
 }
 
 .logged {
@@ -100,8 +184,12 @@ body {
 	background-color: lime;
 }
 
-.todo {
+.incomplete {
 	background-color: yellow;
+}
+
+.todo {
+	background-color: white;
 }
 
 .plan__mc {

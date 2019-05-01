@@ -6,17 +6,15 @@
 	</head>
 	<body>
 		<div class="content">
-			<h1>Alex Chiang</h1>
 			<article>
 				<div class="row attendance">
 					<div class="cell cell__sign-in">
 						<input id="initials-start" type="text" placeholder="Initials" maxlength="2">
 						<input id="sign-in" type="button" value="Sign in">
 					</div>
-					<div class="cell session">
-						<input type="button" value="Prev">
-						<h2>Session 1</h2>
-						<input type="button" value="Next">
+					<div>
+						<h1 id="name">Alex Chiang</h1>
+						<h2 id="subtitle">Game Plan of <a id="game-plan-date">01/01/1970</a></h2>
 					</div>
 					<div class="cell cell__sign-out">
 						<input id="initials-end" type="text" placeholder="Initials" maxlength="2">
@@ -28,6 +26,11 @@
 					<input type="button" value="Edit">
 					<input type="button" value="Del">
 				</div>
+				<div class="cell session">
+					<input type="button" value="Prev">
+					<h2>Session 1</h2>
+					<input type="button" value="Next">
+				</div>
 				<div class="row plan">
 					<table>
 						<tr>
@@ -38,16 +41,16 @@
 								</select>
 							</th>
 							<th class="plan__pages">
-								<input class="logged" type="button" value="1">
-								<input class="logged" type="button" value="2">
-								<input class="todo" type="button" value="3">
-								<input class="logged" type="button" value="4">
-								<input class="todo" type="button" value="5">
-								<input type="button" value="6">
-								<input type="button" value="7">
+								<input class="logged" type="button" value="1" disabled="true">
+								<input class="logged" type="button" value="2" disabled="true">
+								<input class="incomplete" type="button" value="3">
+								<input class="logged" type="button" value="4" disabled="true">
+								<input class="incomplete" type="button" value="5">
+								<input class="todo" type="button" value="6">
+								<input class="todo" type="button" value="7">
 							</th>
 							<th class="plan__mc">
-								<input type="button" value="M">
+								<input class="todo" type="button" value="M">
 							</th>
 						</tr>
 						<tr>
@@ -58,13 +61,13 @@
 								</select>
 							</th>
 							<th class="plan__pages">
-								<input type="button" value="1">
-								<input type="button" value="2">
-								<input type="button" value="3">
-								<input type="button" value="4">
+								<input class="todo" type="button" value="1">
+								<input class="todo" type="button" value="2">
+								<input class="todo" type="button" value="3">
+								<input class="todo" type="button" value="4">
 							</th>
 							<th class="plan__mc">
-								<input type="button" value="M">
+								<input class="todo" type="button" value="M">
 							</th>
 						</tr>						
 						<tr>
@@ -75,11 +78,11 @@
 								</select>
 							</th>
 							<th class="plan__pages">
-								<input type="button" value="1">
-								<input type="button" value="2">
+								<input class="todo" type="button" value="1">
+								<input class="todo" type="button" value="2">
 							</th>
 							<th class="plan__mc">
-								<input type="button" value="M">
+								<input class="todo" type="button" value="M">
 							</th>
 						</tr>
 					</table>
