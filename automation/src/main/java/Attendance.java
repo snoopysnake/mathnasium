@@ -31,12 +31,15 @@ import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
@@ -50,7 +53,8 @@ public class Attendance extends Application {
     OutputStream output = null;
     Properties prop;
     String currentDir = System.getProperty("user.dir");
-    String PATH = currentDir + "\\reports";
+//    String PATH = currentDir + "//reports";
+    String PATH = currentDir + "C:\\Users\\Mathnasium\\Downloads";
     boolean canExit = true;
     CellStyle successCell, failCell;
     String cellMsg = "";
@@ -250,7 +254,7 @@ public class Attendance extends Application {
                     System.out.println("ERROR: Multiple students found!");
                     cellMsg = "Multiple students found";
                     for (int i = 0; i < array.size(); i++) {
-                                            System.out.println(array.getJsonObject(0).toString());
+                        System.out.println(array.getJsonObject(0).toString());
 
                         String entityType = array.getJsonObject(0).getString("EntityType");
                         String id = array.getJsonObject(0).getString("Id");
@@ -340,7 +344,7 @@ public class Attendance extends Application {
     }
 
     public boolean addAttendance(String studentID, String attDate, String arrTime,
-                              String depTime, int enrollmentID) throws Exception {
+                                 String depTime, int enrollmentID) throws Exception {
         URL url = new URL("https://radius.mathnasium.com/Attendance/CreateAttendanceStudentDetails");
         String json = "{" +
                 "\"studentId\": \"" + studentID + "\"," +
@@ -387,7 +391,7 @@ public class Attendance extends Application {
     }
 
     public boolean validateAttendance(String studentID, LocalDate date,
-            String startTime, String endTime) throws Exception {
+                                      String startTime, String endTime) throws Exception {
         System.out.println("Validating attendance...");
         URL url = new URL("https://radius.mathnasium.com/Attendance/Attendances_Read?StudentId=" + studentID);
         Map<String,Object> params = new LinkedHashMap<>();
@@ -426,17 +430,36 @@ public class Attendance extends Application {
                         String jsonDate = array.getJsonObject(i).getString("AttendanceDateString");
                         String jsonStartTime = array.getJsonObject(i).getString("ArrivalTimeString");
                         String jsonEndTime = array.getJsonObject(i).getString("DepartureTimeString");
+
                         if (date.format(cellDateFormat).equals(jsonDate)) {
-                            if (jsonStartTime.equals(startTime) && jsonEndTime.equals(endTime)) {
-                                Platform.runLater(() -> console.appendText("\nSUCCESS: Attendance exists!"));
-                                System.out.println("SUCCESS: Attendance exists!");
-                                return true;
+                            // Daylights Savings
+                            boolean dst = ZoneId.of( "America/Montreal" ).getRules().isDaylightSavings(date.atTime(7,0).toInstant(ZoneOffset.UTC));
+                            if (dst) {
+                                LocalTime dstStartTime = LocalTime.parse(startTime, timeFormatter).plusHours(1);
+                                LocalTime dstEndTime = LocalTime.parse(endTime, timeFormatter).plusHours(1);
+                                if (jsonStartTime.equals(dstStartTime.format(timeFormatter)) &&
+                                        jsonEndTime.equals(dstEndTime.format(timeFormatter))) {
+                                    Platform.runLater(() -> console.appendText("\nSUCCESS: Attendance exists!"));
+                                    System.out.println("SUCCESS: Attendance exists!");
+                                    return true;
+                                } else {
+                                    Platform.runLater(() -> console.appendText("\nERROR: Student time mismatch! "));
+                                    System.out.println("ERROR: Student time mismatch!");
+                                    cellMsg = "Student time mismatch";
+                                    return false;
+                                }
                             }
                             else {
-                                Platform.runLater(() -> console.appendText("\nERROR: Student info mismatch! "));
-                                System.out.println("ERROR: Student info mismatch!");
-                                cellMsg = "Student info mismatch";
-                                return false;
+                                if (jsonStartTime.equals(startTime) && jsonEndTime.equals(endTime)) {
+                                    Platform.runLater(() -> console.appendText("\nSUCCESS: Attendance exists!"));
+                                    System.out.println("SUCCESS: Attendance exists!");
+                                    return true;
+                                } else {
+                                    Platform.runLater(() -> console.appendText("\nERROR: Student time mismatch! "));
+                                    System.out.println("ERROR: Student time mismatch!");
+                                    cellMsg = "Student time mismatch";
+                                    return false;
+                                }
                             }
                         }
                     }
@@ -576,6 +599,7 @@ public class Attendance extends Application {
                                 updateProgress(itr, total);
                                 Platform.runLater(() -> status.setValue("Adding attendance for " + student.name +
                                         " on " + cellDateFormat.format(date)));
+                                Platform.runLater(() -> console.setText(""));
                                 System.out.println("Adding attendance for " + student.name +
                                         " on " + cellDateFormat.format(date));
                                 updateMessage(percentage.format((double) itr / total));
@@ -761,8 +785,9 @@ public class Attendance extends Application {
 
     @Override
     public void start(final Stage initStage) throws Exception {
-        getCredentials();
-        showMainStage();
+//        getCredentials();
+//        showMainStage();
+        showLoginStage();
     }
 
     @Override
@@ -780,7 +805,7 @@ public class Attendance extends Application {
 
     public File validateExcelFile(LocalDate startDate, LocalDate endDate) {
         System.out.println("Start: " + startDate.format(fileDateFormat)); // Excel log info
-            System.out.println("End: " + endDate.format(fileDateFormat));
+        System.out.println("End: " + endDate.format(fileDateFormat));
         if (endDate.isBefore(startDate)) {
             return null;
         }
@@ -843,22 +868,142 @@ public class Attendance extends Application {
         workbook.write(fos);
     }
 
-    public void getCredentials() throws Exception {
-        File file = new File("credentials.txt");
-        Scanner input = new Scanner(file);
-        cookie = input.nextLine();
-        input.nextLine();
-        requestVerificationToken = input.nextLine();
-        if (searchStudent("Test Student").equals("1147558")) { // Simple verification method
-            System.out.println("SUCCESS: Credentials valid!");
+    public void showLoginStage() {
+        Stage loginStage = new Stage();
+        loginStage.setTitle("Attendance Automation");
+        GridPane grid = new GridPane();
+        ScrollPane sp = new ScrollPane(grid);
+        sp.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+
+        grid.setAlignment(Pos.CENTER);
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(10, 10, 10, 10));
+
+        Text sceneTitle = new Text("Login to Radius");
+        sceneTitle.setFont(Font.font("Tahoma", FontWeight.NORMAL, 20));
+        grid.add(sceneTitle, 0, 0, 2, 1);
+
+        Label radiusUser = new Label("Radius username:");
+        grid.add(radiusUser, 0, 1);
+        TextField radiusUserTextField = new TextField("");
+        grid.add(radiusUserTextField, 1, 1);
+
+        Label radiusPW = new Label("Radius password:");
+        grid.add(radiusPW, 0, 2);
+        PasswordField radiusPWTextField = new PasswordField();
+        grid.add(radiusPWTextField, 1, 2);
+
+        Button loginBtn = new Button("Login");
+        loginBtn.setOnAction(event -> {
+            loginBtn.setDisable(true);
+            try {
+                if (login(radiusUserTextField.getText(), radiusPWTextField.getText())) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setHeaderText("Login successful!");
+                    alert.setContentText("Logged in to " + radiusUserTextField.getText() + "!");
+                    alert.showAndWait();
+                    loginStage.close();
+                    showMainStage();
+                }
+                else {
+                    loginBtn.setDisable(false);
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setHeaderText("Login credentials invalid!");
+                    alert.setContentText("Please enter valid credentials");
+                    alert.showAndWait();
+                }
+            } catch (Exception e) {
+                loginBtn.setDisable(false);
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setHeaderText("Something went wrong!");
+                alert.setContentText("Something went wrong!");
+                alert.getDialogPane().setExpandableContent(new ScrollPane(new TextArea(e.toString())));
+                alert.showAndWait();
+                e.printStackTrace();
+            }
+        });
+        grid.add(loginBtn, 1, 5);
+
+        loginStage.setScene(new Scene(sp, 330, 260));
+        loginStage.show();
+    }
+
+    public boolean login(String user, String pass) throws Exception {
+        int responseCode = -1;
+        // Get cookies and token from login page
+        HttpURLConnection conn = (HttpURLConnection) new URL("https://radius.mathnasium.com/Account/Login?ReturnUrl=%2F").openConnection();
+        List<String> cookies = conn.getHeaderFields().get("Set-Cookie");
+        String wholeCookie = "";
+        for (String c : cookies) {
+            wholeCookie += c.split(";")[0] + "; "; // remove trailing info from cookie
         }
-        else {
-            System.out.println("ERROR: Credentials invalid!");
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setHeaderText("Credentials invalid!");
-            alert.setContentText("Please add new verification token and cookie.");
-            alert.showAndWait();
+        cookie = wholeCookie;
+        Reader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+        StringBuffer response = new StringBuffer();
+        for (int c; (c = in.read()) >= 0;)
+            response.append((char)c);
+        String regexString = Pattern.quote("<form action=\"/Account/Login?ReturnUrl=%2F\" class=\"form-horizontal\" method=\"post\" role=\"form\"><input name=\"__RequestVerificationToken\" type=\"hidden\" value=\"") + "(.*?)" + Pattern.quote("\" />");
+        Pattern pattern = Pattern.compile(regexString);
+        Matcher matcher = pattern.matcher(response);
+        while (matcher.find()) {
+            requestVerificationToken = matcher.group(1); // first token
+            break;
         }
-        input.close();
+
+        // login using cookie + token + login info
+        URL url = new URL("https://radius.mathnasium.com/Account/Login");
+        String urlParameters = "UserName=" + user + "&Password=" + pass + "&RememberMe=true&__RequestVerificationToken=" + requestVerificationToken;
+        byte[] postData = urlParameters.getBytes( StandardCharsets.UTF_8 );
+        conn = (HttpURLConnection)url.openConnection();
+        conn.setReadTimeout(5000);
+        conn.setInstanceFollowRedirects(false);
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Length", Integer.toString(postData.length));
+        conn.setRequestProperty("origin","https://radius.mathnasium.com");
+        conn.setRequestProperty("referer","https://radius.mathnasium.com/Account/Login");
+        conn.setRequestProperty("user-agent","Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36");
+        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        conn.setRequestProperty("upgrade-insecure-requests", "1");
+        conn.setRequestProperty("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3");
+        conn.setRequestProperty("accept-encoding", "gzip, deflate, br");
+        conn.setRequestProperty("accept-language", "en-US,en;q=0.9");
+        conn.setRequestProperty("Cache-Control", "max-age=0");
+        conn.setRequestProperty("Cookie", cookie);
+        conn.setDoOutput(true);
+        // x www url encoded
+        try(DataOutputStream wr = new DataOutputStream(conn.getOutputStream())) {
+            wr.write( postData );
+        }
+        responseCode = conn.getResponseCode();
+        if (responseCode == 302) {
+            cookies = conn.getHeaderFields().get("Set-Cookie");
+            wholeCookie = "";
+            for (String c : cookies) {
+                wholeCookie += c.split(";")[0] + "; ";
+            }
+            // add new cookies
+            cookie += wholeCookie;
+        }
+
+        // get new token
+        url = new URL("https://radius.mathnasium.com/");
+        conn = (HttpURLConnection)url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("cookie", cookie);
+        conn.setDoOutput(true);
+        in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+        response = new StringBuffer();
+        for (int c; (c = in.read()) >= 0;)
+            response.append((char)c);
+        regexString = Pattern.quote("<input name=\"__RequestVerificationToken\" type=\"hidden\" value=\"") + "(.*?)" + Pattern.quote("\" />");
+        pattern = Pattern.compile(regexString);
+        matcher = pattern.matcher(response);
+        while (matcher.find()) {
+            requestVerificationToken = matcher.group(1);
+            break;
+        }
+
+        return (responseCode == 302) && requestVerificationToken.length() > 0 && cookie.length() > 0;
     }
 }
