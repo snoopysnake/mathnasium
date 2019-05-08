@@ -54,7 +54,7 @@ public class Attendance extends Application {
     Properties prop;
     String currentDir = System.getProperty("user.dir");
 //    String PATH = currentDir + "//reports";
-    String PATH = currentDir + "C:\\Users\\Mathnasium\\Downloads";
+    String PATH = "C:\\Users\\Mathnasium\\Downloads";
     boolean canExit = true;
     CellStyle successCell, failCell;
     String cellMsg = "";
