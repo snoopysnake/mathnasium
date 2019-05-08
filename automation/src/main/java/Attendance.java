@@ -894,43 +894,65 @@ public class Attendance extends Application {
         PasswordField radiusPWTextField = new PasswordField();
         grid.add(radiusPWTextField, 1, 2);
 
+        Label errorLabel = new Label();
+
         Button loginBtn = new Button("Login");
         loginBtn.setOnAction(event -> {
-            loginBtn.setDisable(true);
-            try {
-                if (login(radiusUserTextField.getText(), radiusPWTextField.getText())) {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setHeaderText("Login successful!");
-                    alert.setContentText("Logged in to " + radiusUserTextField.getText() + "!");
-                    alert.showAndWait();
-                    loginStage.close();
-                    showMainStage();
+            Stage progressStage = new Stage();
+            StackPane stack = new StackPane();
+            ProgressBar progressBar = new ProgressBar();
+            progressBar.setMinWidth(290);
+            Label progressMessage = new Label("Logging in...");
+            stack.getChildren().addAll(progressBar, progressMessage);
+            progressStage.setScene(new Scene(stack, 350, 250));
+
+            Task task = new Task<Void>() {
+                @Override
+                protected Void call() throws Exception {
+                    loginBtn.setDisable(true);
+                    try {
+                        if (login(radiusUserTextField.getText(), radiusPWTextField.getText())) {
+                            // successful login
+                            Platform.runLater(() -> {
+                                try {
+                                    loginStage.close();
+                                    showMainStage();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            });
+                            return null;
+                        }
+                        else {
+                            // unsuccessful login
+                            loginBtn.setDisable(false);
+                            Platform.runLater(() -> errorLabel.setText("Login credentials invalid!"));
+                        }
+                    } catch (Exception e) {
+                        loginBtn.setDisable(false);
+                        e.printStackTrace();
+                    }
+
+                    return null;
                 }
-                else {
-                    loginBtn.setDisable(false);
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setHeaderText("Login credentials invalid!");
-                    alert.setContentText("Please enter valid credentials");
-                    alert.showAndWait();
-                }
-            } catch (Exception e) {
-                loginBtn.setDisable(false);
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setHeaderText("Something went wrong!");
-                alert.setContentText("Something went wrong!");
-                alert.getDialogPane().setExpandableContent(new ScrollPane(new TextArea(e.toString())));
-                alert.showAndWait();
-                e.printStackTrace();
-            }
+            };
+            task.setOnScheduled(event0 -> {
+                progressStage.show(); // progress bar
+            });
+            task.setOnSucceeded(event1 -> {
+                progressStage.close(); // progress bar
+            });
+            new Thread(task).start();
         });
         grid.add(loginBtn, 1, 5);
+        grid.add(errorLabel, 1, 6);
 
-        loginStage.setScene(new Scene(sp, 330, 260));
+        loginStage.setScene(new Scene(sp, 325, 275));
         loginStage.show();
     }
 
     public boolean login(String user, String pass) throws Exception {
-        int responseCode = -1;
+        int responseCode;
         // Get cookies and token from login page
         HttpURLConnection conn = (HttpURLConnection) new URL("https://radius.mathnasium.com/Account/Login?ReturnUrl=%2F").openConnection();
         List<String> cookies = conn.getHeaderFields().get("Set-Cookie");
