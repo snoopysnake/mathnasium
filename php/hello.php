@@ -75,13 +75,11 @@
 			// echo "<br>{$header}<br><br>"; // print entire header
 			$httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 			// echo "HTTP Code: {$httpcode}"; // 302
-			$cookies = "";
 			preg_match_all('/^Set-Cookie:\s*([^;]*)/mi', $result, $matches);
 			foreach($matches[1] as $item) {
 				$cookies = "{$cookies}{$item}; ";
 			}
 			// echo "<br>";
-			// echo "New Cookies: {$cookies}";
 			// echo "<br>";
 			if ($httpcode == 302) {
 				// get new token

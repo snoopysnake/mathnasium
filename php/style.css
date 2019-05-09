@@ -12,6 +12,11 @@ html, body {
 
 .message {
 	position: absolute;
-	top: 30%;
+	top: 20%;
 	font-size: 50px;
+}
+
+.lastActivity {
+	position: absolute;
+	top: 30%;
 }
