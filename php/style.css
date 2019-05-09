@@ -1,0 +1,17 @@
+html, body {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+}
+
+.login {
+	display: flex;
+	flex-direction: column;
+}
+
+.message {
+	position: absolute;
+	top: 30%;
+	font-size: 50px;
+}
