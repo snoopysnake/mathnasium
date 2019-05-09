@@ -8,9 +8,9 @@
 		<div class="lastActivity"></div>
 		<div class="login">
 			<label>Student ID:</label>
-				<form action="attendance.php" method="post">
-				<input type="text" name="studentID">
-				<input type="submit">
+				<form id="idForm" action="attendance.php" method="post">
+				<input id="idInput" type="text" name="studentID" autofocus>
+				<input id="idSubmit" type="submit">
 				<!-- <select name="location">
     				<option disabled selected>Select location</option>
 					<option value="30">Ellicott City</option>
@@ -24,7 +24,16 @@
 	</body>
 	<script>
 		var timeout;
+		const idForm = document.getElementById('idForm');
+		const idInput = document.getElementById('idInput');
+		const idSubmit = document.getElementById('idSubmit');
+		setInterval(function() {
+			idInput.focus()	;
+		},700);
 		console.log(<?php echo json_encode($_POST) ?>);
+		idForm.addEventListener('submit', function() {
+			idSubmit.disabled = true;
+		});
 
 		function message(studentID, lastActivity, isCheckedIn) {
 			const message = document.querySelector('.message');
