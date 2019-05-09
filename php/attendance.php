@@ -35,14 +35,14 @@
 
 				if (strlen(trim($studentID)) > 0) {
 					// send request to Radius and MB
-
+					
 					// if successful, use js to display
 					echo "<script>message(\"{$studentID}\");</script>";
 				}
 			}
 		}
 		else {
-			echo "Not logged in.";
+			echo "Not logged in. >:(";
 		}
 	?>	
 </html>

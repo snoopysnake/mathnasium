@@ -101,7 +101,10 @@
 				}
 				setcookie("radius_cookies", $cookies, time() + (86400 * 30), "/"); // 86400 = 1 day
 				setcookie("radius_token", $token, time() + (86400 * 30), "/"); // 86400 = 1 day
+    			$_COOKIE["radius_cookies"] = $cookies; // workaround
+    			$_COOKIE["radius_token"] = $token;
 				include("attendance.php");
+				echo "Logged in.";
 			}
 			else {
 				echo "Login failed.";
