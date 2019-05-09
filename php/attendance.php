@@ -29,7 +29,7 @@
 		function message(studentID, lastActivity, isCheckedIn) {
 			const message = document.querySelector('.message');
 			const lastActivityDiv = document.querySelector('.lastActivity');
-			if (isCheckedIn) {
+			if (!isCheckedIn) {
 				message.textContent = 'Welcome, ' + studentID + '!';
 			}
 			else {

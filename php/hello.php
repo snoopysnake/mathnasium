@@ -1,9 +1,3 @@
-<html>
-	<head>
-		<title>Arup Mathnasium</title>
-        <link rel="stylesheet" type="text/css" href="style.css">
-	</head>
-</html>
 <?php 
 	$ch = curl_init('https://radius.mathnasium.com/Account/Login');
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -80,6 +74,7 @@
 				$cookies = "{$cookies}{$item}; ";
 			}
 			// echo "<br>";
+			// echo "New Cookies: {$cookies}";
 			// echo "<br>";
 			if ($httpcode == 302) {
 				// get new token
@@ -115,3 +110,9 @@
 		}
 	}
 ?>
+<html>
+	<head>
+		<title>Arup Mathnasium</title>
+        <link rel="stylesheet" type="text/css" href="style.css">
+	</head>
+</html>
