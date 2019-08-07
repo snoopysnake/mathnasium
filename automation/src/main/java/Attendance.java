@@ -115,7 +115,7 @@ public class Attendance extends Application {
             name = name.replaceAll("/", ""); // removes stray forward slash
             String splitName[] = name.split(", ");
 
-            if (splitName.length > 0) {
+            if (splitName.length == 2) {
                 splitName[0] = splitName[0].replaceAll("\\(.*\\)", ""); // removes parentheses + content inside
                 splitName[0] = splitName[0].replaceAll("\\(",""); // removes stray opening parentheses
                 splitName[0] = splitName[0].replaceAll("\\)","").trim(); // removes stray closing parentheses
