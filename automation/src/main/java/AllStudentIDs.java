@@ -29,12 +29,17 @@ public class AllStudentIDs {
         int potomac = 3050;
         int rockville = 31;
         Workbook workbook = new XSSFWorkbook();
-        login("", "");
-        getAllStudentIDs(workbook, ellicott);
-        getAllStudentIDs(workbook, germantown);
-        getAllStudentIDs(workbook, northpoto);
-        getAllStudentIDs(workbook, potomac);
-        getAllStudentIDs(workbook, rockville);
+        Sheet sheet = workbook.createSheet();
+        Row header = sheet.createRow(0);
+        header.createCell(0).setCellValue("Student Name");
+        header.createCell(1).setCellValue("Student ID");
+        header.createCell(2).setCellValue("Location");
+        login("arup.mondal", "alex123");
+        getAllStudentIDs(sheet, ellicott);
+        getAllStudentIDs(sheet, germantown);
+        getAllStudentIDs(sheet, northpoto);
+        getAllStudentIDs(sheet, potomac);
+        getAllStudentIDs(sheet, rockville);
         FileOutputStream fileOut = new FileOutputStream("Radius-Student-IDs.xlsx");
         workbook.write(fileOut);
         fileOut.close();
@@ -118,6 +123,42 @@ public class AllStudentIDs {
         return (responseCode == 302) && token.length() > 0 && cookie.length() > 0;
     }
 
+
+    public static void getAllStudentIDs(Sheet sheet, int location) throws Exception {
+        String locationName = "";
+        switch(location) {
+            case 30: locationName="Ellicott City"; break;
+            case 32: locationName="Germantown"; break;
+            case 29: locationName="North Potomac"; break;
+            case 3050: locationName="Potomac"; break;
+            case 31: locationName="Rockville"; break;
+        }
+        System.out.print("Searching " + locationName + "...");
+        URL url = new URL("https://radius.mathnasium.com/Attendance/StudentAttendances_Read?centerId="+location);
+        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setInstanceFollowRedirects(true);
+        HttpURLConnection.setFollowRedirects(true);
+        conn.setRequestProperty("cookie", cookie);
+        conn.setDoOutput(true);
+        JsonReader jsonReader = Json.createReader(new InputStreamReader(conn.getInputStream()));
+        JsonObject obj = jsonReader.readObject();
+        if (obj != null) {
+            JsonArray array = obj.getJsonArray("Data");
+            int lastRow = sheet.getLastRowNum();
+            for (int i = 0; i < array.size(); i++) {
+                int studentID = array.getJsonObject(i).getInt("StudentID");
+                String studentName = array.getJsonObject(i).getString("StudentName");
+                Row row = sheet.createRow(++lastRow);
+                // Create Other rows and cells with employees data
+                row.createCell(0).setCellValue(studentName);
+                row.createCell(1).setCellValue(studentID);
+                row.createCell(2).setCellValue(locationName);
+            }
+        }
+        sheet.autoSizeColumn(0);
+        jsonReader.close();
+    }
 
     public static void getAllStudentIDs(Workbook workbook, int location) throws Exception {
         String locationName = "";

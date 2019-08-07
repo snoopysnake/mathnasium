@@ -28,7 +28,6 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -53,8 +52,8 @@ public class Attendance extends Application {
     OutputStream output = null;
     Properties prop;
     String currentDir = System.getProperty("user.dir");
-//    String PATH = currentDir + "//reports";
-    String PATH = "C:\\Users\\Mathnasium\\Downloads";
+    String PATH = currentDir + "//reports";
+//    String PATH = "C:\\Users\\Mathnasium\\Downloads";
     boolean canExit = true;
     CellStyle successCell, failCell;
     String cellMsg = "";
@@ -192,7 +191,7 @@ public class Attendance extends Application {
 
     public String searchStudent(String studentName) throws Exception {
         Platform.runLater(() -> console.appendText("\nSearching for "+studentName + "..."));
-        URL url = new URL("https://radius.mathnasium.com/Base/SearchGrid_Read");
+        URL url = new URL("https://radius.mathnasium.com/GlobalSearch/SearchGrid_Read");
         Map<String,Object> params = new LinkedHashMap<>();
         params.put("__RequestVerificationToken", requestVerificationToken);
         params.put("sort", "");
@@ -236,16 +235,16 @@ public class Attendance extends Application {
                         return id;
                     }
                     else {
-                        Platform.runLater(() -> console.appendText("\nERROR: Student info mismatch! "));
-                        System.out.println("ERROR: Student info mismatch!");
-                        cellMsg = "Student info mismatch";
+                        Platform.runLater(() -> console.appendText("\nERROR: Account mismatch - not a student account in Radius! "));
+                        System.out.println("ERROR: Account mismatch - not a student account in Radius!");
+                        cellMsg = "Account mismatch - not a student account in Radius";
                         return "null";
                     }
                 }
                 else if (array.size() == 0) {
-                    Platform.runLater(() -> console.appendText("\nERROR: Student not found! "));
-                    System.out.println("ERROR: Student not found!");
-                    cellMsg = "Student not found";
+                    Platform.runLater(() -> console.appendText("\nERROR: Student not found in search! "));
+                    System.out.println("ERROR: Student not found in search!!");
+                    cellMsg = "Student not found in search";
                     return "null";
                 }
                 else {
@@ -281,9 +280,10 @@ public class Attendance extends Application {
             }
         }
         else {
-            Platform.runLater(() -> console.appendText("\nERROR: Could not make connection! "));
-            System.out.println("ERROR: Could not make connection!");
-            cellMsg = "Could not make connection";
+            Platform.runLater(() -> console.appendText("\nERROR: Student Search unsuccessful - Bad response code! "));
+            System.out.println("ERROR: Student Search unsuccessful - Bad response code (" + conn.getResponseCode() + ")!");
+//            System.out.println(getErrorMessage(conn));
+            cellMsg = "Student Search unsuccessful - Bad response code (" + conn.getResponseCode() + ")!";
             return "null";
         }
     }
@@ -336,22 +336,23 @@ public class Attendance extends Application {
             }
         }
         else {
-            Platform.runLater(() -> console.appendText("\nERROR: Could not make connection! "));
-            System.out.println("ERROR: Could not make connection!");
-            cellMsg = "Could not make connection";
+            Platform.runLater(() -> console.appendText("\nERROR: Enrollment Search unsuccessful - Bad response code! "));
+            System.out.println("ERROR: Enrollment Search unsuccessful - Bad response code (" + conn.getResponseCode() + ")!");
+//            System.out.println(getErrorMessage(conn));
+            cellMsg = "Enrollment Search unsuccessful - Bad response code (" + conn.getResponseCode() + ")!";
             return -1;
         }
     }
 
     public boolean addAttendance(String studentID, String attDate, String arrTime,
-                                 String depTime, int enrollmentID) throws Exception {
+                                 String depTime, int duration, int enrollmentID) throws Exception {
         URL url = new URL("https://radius.mathnasium.com/Attendance/CreateAttendanceStudentDetails");
         String json = "{" +
                 "\"studentId\": \"" + studentID + "\"," +
                 "\"attendanceDate\": \"" + attDate + "\"," +
                 "\"arrivalTime\": \"" + arrTime +"\"," +
                 "\"departureTime\": \"" + depTime + "\"," +
-                "\"duration\": 0," +
+                "\"duration\": \"" + duration + "\"," +
                 "\"enrollmentId\": " + enrollmentID + "," +
                 "\"SupplementalAttendanceId\": null" +
                 "}";
@@ -360,7 +361,7 @@ public class Attendance extends Application {
         conn.setRequestProperty("cookie", cookie);
         conn.setRequestProperty("__RequestVerificationToken", requestVerificationToken);
         conn.setRequestProperty("origin","https://radius.mathnasium.com");
-        conn.setRequestProperty("referer","https://radius.mathnasium.com/Student/Details/"+studentID);
+        conn.setRequestProperty("referer", "https://radius.mathnasium.com/Student/Details/" + studentID);
         conn.setRequestProperty("user-agent","Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36");
         conn.setRequestProperty("x-requested-with", "XMLHttpRequest");
         conn.setRequestProperty("Content-Type", "application/json");
@@ -383,15 +384,16 @@ public class Attendance extends Application {
             }
         }
         else {
-            Platform.runLater(() -> console.appendText("\nERROR: Could not make connection! "));
-            System.out.println("ERROR: Could not make connection!");
-            cellMsg = "Could not make connection";
+            Platform.runLater(() -> console.appendText("\nERROR: Add Attendance unsuccessful - Bad response code! "));
+            System.out.println("ERROR: Add Attendance unsuccessful - Bad response code (" + conn.getResponseCode() + ")!");
+//            System.out.println(getErrorMessage(conn));
+            cellMsg = "Add Attendance unsuccessful - Bad response code (" + conn.getResponseCode() + ")!";
             return false;
         }
     }
 
     public boolean validateAttendance(String studentID, LocalDate date,
-                                      String startTime, String endTime) throws Exception {
+                                      String startTime, String endTime, boolean checkExistence) throws Exception {
         System.out.println("Validating attendance...");
         URL url = new URL("https://radius.mathnasium.com/Attendance/Attendances_Read?StudentId=" + studentID);
         Map<String,Object> params = new LinkedHashMap<>();
@@ -425,6 +427,10 @@ public class Attendance extends Application {
             jsonReader.close();
             if (obj != null) {
                 JsonArray array = obj.getJsonArray("Data");
+                if (array.size() == 0 && checkExistence) {
+                    // Because array is empty (to begin with) and attendance has NOT been added, there are no duplicates.
+                    return false; // Returns false because validation must fail for script to continue running....
+                }
                 if (array.size() > 0) {
                     for (int i = 0; i < array.size(); i++) {
                         String jsonDate = array.getJsonObject(i).getString("AttendanceDateString");
@@ -466,23 +472,24 @@ public class Attendance extends Application {
                     return false;
                 }
                 else {
-                    Platform.runLater(() -> console.appendText("\nERROR: Enrollment not found! "));
-                    System.out.println("ERROR: Enrollment not found!");
-                    cellMsg = "Enrollment not found";
+                    Platform.runLater(() -> console.appendText("\nERROR: Attendances not found! "));
+                    System.out.println("ERROR: Attendances not found!");
+                    cellMsg = "Attendances not found";
                     return false;
                 }
             }
             else {
-                Platform.runLater(() -> console.appendText("\nERROR: Enrollment not found! "));
-                System.out.println("ERROR: Enrollment not found!");
-                cellMsg = "Enrollment not found";
+                Platform.runLater(() -> console.appendText("\nERROR: Attendances not found! "));
+                System.out.println("ERROR: Attendances not found!");
+                cellMsg = "Attendances not found";
                 return false;
             }
         }
         else {
-            Platform.runLater(() -> console.appendText("\nERROR: Could not make connection! "));
-            System.out.println("ERROR: Could not make connection!");
-            cellMsg = "Could not make connection";
+            Platform.runLater(() -> console.appendText("\nERROR: Read Attendance unsuccessful - Bad response code! "));
+            System.out.println("ERROR: Read Attendance unsuccessful - Bad response code (" + conn.getResponseCode() + ")!");
+//            System.out.println(getErrorMessage(conn));
+            cellMsg = "Read Attendance unsuccessful - Bad response code (" + conn.getResponseCode() + ")!";
             return false;
         }
     }
@@ -633,8 +640,9 @@ public class Attendance extends Application {
                                 }
 
                                 if (validateAttendance(prop.getProperty(student.name), date,
-                                        student.startTime, student.endTime)) {
+                                        student.startTime, student.endTime, true)) {
                                     // Check if attendance already exists
+                                    System.out.println("INFO: Attendance already input!");
                                     setStatus(student.name, date, true, sheet, arrival, key);
                                     itr++;
                                     continue;
@@ -655,17 +663,18 @@ public class Attendance extends Application {
                                     LocalDateTime dateTime = date.atTime(5, 0, 0, 0);
                                     LocalDateTime arrDateTime = date.atTime(arrTime);
                                     LocalDateTime depDateTime = date.atTime(depTime);
+                                    int duration = (int) Duration.between(arrDateTime, depDateTime).toMinutes();
                                     String jsonDate1 = dateTime.format(DateTimeFormatter.ISO_DATE_TIME) + ".000Z";
                                     String jsonDate2 = arrDateTime.plusHours(5).format(DateTimeFormatter.ISO_DATE_TIME) + ".000Z";
                                     String jsonDate3 = depDateTime.plusHours(5).format(DateTimeFormatter.ISO_DATE_TIME) + ".000Z";
                                     // Three attempts to add attendance
                                     boolean attendanceAdded = false;
                                     for (int j = 0; j < 3; j++) {
-                                        if (addAttendance(prop.getProperty(student.name), jsonDate1, jsonDate2, jsonDate3, enrollmentID)) {
+                                        if (addAttendance(prop.getProperty(student.name), jsonDate1, jsonDate2, jsonDate3, duration, enrollmentID)) {
                                             // Success -> validate entry
 //                                            Thread.sleep(69);
                                             if (validateAttendance(prop.getProperty(student.name), date,
-                                                    student.startTime, student.endTime)) {
+                                                    student.startTime, student.endTime, false)) {
                                                 // Success -> add check mark!
                                                 attendanceAdded = true;
                                                 break;
@@ -793,6 +802,9 @@ public class Attendance extends Application {
     @Override
     public void stop() throws IOException {
         System.out.println("Saving...");
+        for (int i = 0; i <= 10; i++) {
+            sheet.autoSizeColumn(i);
+        }
         if (fos != null)
             fos.close();
         if (workbook != null)
@@ -1027,5 +1039,15 @@ public class Attendance extends Application {
         }
 
         return (responseCode == 302) && requestVerificationToken.length() > 0 && cookie.length() > 0;
+    }
+
+    public String getErrorMessage(HttpURLConnection conn) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader((conn.getErrorStream())));
+        StringBuilder sb = new StringBuilder();
+        String output;
+        while ((output = br.readLine()) != null) {
+            sb.append(output);
+        }
+        return sb.toString();
     }
 }
